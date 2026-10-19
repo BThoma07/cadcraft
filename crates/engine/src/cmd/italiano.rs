@@ -250,13 +250,19 @@ mod tests {
     fn i_comandi_piu_usati_esistono() {
         for n in [
             "sposta", "plinea", "copia", "taglia", "corrisprop", "ruota", "xlinea", "estendi", "cerchio", "unisci", "rigent",
-            "offset", "rimisolay", "specchio", "isolay", "esplodi", "scala", "linea", "blocco", "allinea", "tratteggio",
+            "rimisolay", "specchio", "isolay", "esplodi", "scala", "linea", "blocco", "allinea", "tratteggio",
         ] {
             assert!(command(n).is_some(), "{n} non trovato");
         }
         for (a, _) in ALIAS {
             assert!(alias(a).is_some(), "alias {a} senza comando");
         }
+    }
+
+    #[test]
+    fn offset_ha_lo_stesso_nome_in_italiano() {
+        // OFFSET is OFFSET in the Italian edition too: the English id, no entry needed.
+        assert_eq!(super::super::resolve_alias("offset"), "offset");
     }
 
     #[test]

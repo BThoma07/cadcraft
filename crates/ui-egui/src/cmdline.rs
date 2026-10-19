@@ -126,7 +126,8 @@ fn suggestions(prefix: &str) -> Vec<Suggestion> {
         // Italian edition: show the Italian name (TT (TAGLIA)) and type what the user typed.
         let shown = cadcraft_engine::cmd::italiano::name_of(spec.id).unwrap_or(spec.id).to_ascii_uppercase();
         let display = if shown.eq_ignore_ascii_case(&p) || spec.id == p { shown } else { format!("{} ({shown})", p.to_ascii_uppercase()) };
-        out.push(Suggestion { id: p.to_ascii_uppercase(), display, label: spec.label });
+        // Tab completes to the Italian name, as the Italian edition does (REC → RETTANGOLO).
+        out.push(Suggestion { id: shown.clone(), display, label: spec.label });
         seen_ids.insert(spec.id);
     }
 
@@ -794,27 +795,29 @@ mod autocomplete_tests {
 
     #[test]
     fn exact_alias_is_first_suggestion_with_alias_display() {
+        // Italian edition: the alias, then the Italian name it completes to.
         let rec = suggestions("rec");
         assert!(!rec.is_empty());
-        assert_eq!(rec[0].id, "RECTANG");
-        assert_eq!(rec[0].display, "REC (RECTANG)");
+        assert_eq!(rec[0].id, "RETTANGOLO");
+        assert_eq!(rec[0].display, "REC (RETTANGOLO)");
         assert_eq!(rec[0].label, "Rectangle");
-        // RECOVER should follow RECTANG, not precede it
-        assert!(rec.iter().any(|s| s.id == "RECOVER"));
-        assert_eq!(rec[1].id, "RECOVER");
-        assert_eq!(rec[1].display, "RECOVER");
+        // RECUPERA (RECOVER) follows the exact alias, not precedes it.
+        assert!(rec.iter().skip(1).any(|s| s.id == "RECUPERA"), "{rec:?}");
 
         let l = suggestions("l");
-        assert_eq!(l[0].id, "LINE");
-        assert_eq!(l[0].display, "L (LINE)");
+        assert_eq!(l[0].id, "LINEA");
+        assert_eq!(l[0].display, "L (LINEA)");
 
+        // The user's own aliases: C and CO copy, CE draws a circle.
         let c = suggestions("c");
-        assert_eq!(c[0].id, "CIRCLE");
-        assert_eq!(c[0].display, "C (CIRCLE)");
+        assert_eq!(c[0].id, "COPIA");
+        assert_eq!(c[0].display, "C (COPIA)");
+        let ce = suggestions("ce");
+        assert_eq!(ce[0].id, "CERCHIO");
 
         let co = suggestions("co");
-        assert_eq!(co[0].id, "COPY");
-        assert_eq!(co[0].display, "CO (COPY)");
+        assert_eq!(co[0].id, "COPIA");
+        assert_eq!(co[0].display, "CO (COPIA)");
     }
 
     #[test]
@@ -824,7 +827,7 @@ mod autocomplete_tests {
         assert_eq!(rect[0].display, "RECTANG");
 
         let line = suggestions("line");
-        assert_eq!(line[0].id, "LINE");
+        assert_eq!(line[0].id, "LINEA");
         assert_eq!(line[0].display, "LINEA", "the Italian name is shown");
     }
 
@@ -833,6 +836,6 @@ mod autocomplete_tests {
         let mut app = CadApp::new(cadcraft_engine::Session::empty(), crate::Services::default());
         app.cmd.buffer = "rec".to_string();
         tab(&mut app);
-        assert_eq!(app.cmd.buffer, "RECTANG");
+        assert_eq!(app.cmd.buffer, "RETTANGOLO");
     }
 }

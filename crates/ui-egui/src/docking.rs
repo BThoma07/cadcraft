@@ -105,6 +105,18 @@ impl Default for Workspace {
 }
 
 impl Workspace {
+    /// The Italian AutoCAD-style edition: the drawing and, on the right, the Properties palette
+    /// alone (layers live on the ribbon's Layer panel and in the Layer Properties Manager).
+    pub fn autocad() -> Self {
+        Self {
+            layout: Layout {
+                root: Some(split(SplitAxis::Horizontal, SplitSize::FixedSecond(330.0), tabs(Panel::Canvas), tabs(Panel::Properties))),
+                floating: Vec::new(),
+            },
+            hidden: Vec::new(),
+        }
+    }
+
     pub fn validate(&self) -> Result<(), String> {
         self.layout.validate().map_err(|error| error.to_string())?;
         if !self.layout.contains(&Panel::Canvas) || self.hidden.len() > Panel::ALL.len() + Panel::ON_DEMAND.len() {

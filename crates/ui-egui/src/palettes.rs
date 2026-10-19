@@ -514,34 +514,101 @@ pub(crate) fn layers_section(app: &mut CadApp, ui: &mut egui::Ui) {
     }
 }
 
+/// Height of a Properties row (the reference program's property grid).
+const PROP_ROW_H: f32 = 19.0;
+
+thread_local! {
+    /// The Properties category being drawn is collapsed: its rows are skipped.
+    static PROP_COLLAPSED: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
+/// One row of the property grid: the name on the left (indented, clipped with an ellipsis like
+/// the reference program), the value on the right, a thin rule between rows. Rows of a collapsed
+/// category are not drawn.
 fn prop_row(ui: &mut egui::Ui, label: &str, add: impl FnOnce(&mut egui::Ui)) {
+    if PROP_COLLAPSED.with(std::cell::Cell::get) {
+        return;
+    }
     let t = Tokens::get();
+    let full = ui.available_width();
+    let name_w = (full * 0.46).clamp(96.0, 150.0);
+    let top = ui.cursor().top();
     ui.horizontal(|ui| {
-        let mut job = egui::text::LayoutJob::simple(crate::i18n::t(label).to_string(), crate::theme::body(), t.text_dim, 106.0);
-        job.halign = egui::Align::RIGHT;
+        ui.spacing_mut().item_spacing = vec2(0.0, 0.0);
+        let (lr, resp) = ui.allocate_exact_size(vec2(name_w, PROP_ROW_H), Sense::hover());
+        let mut job = egui::text::LayoutJob::simple_singleline(crate::i18n::t(label).to_string(), crate::theme::small(), t.text_dim);
+        job.wrap = egui::text::TextWrapping::truncate_at_width(name_w - 18.0);
         let galley = ui.painter().layout_job(job);
-        let (lr, _) = ui.allocate_exact_size(vec2(118.0, galley.size().y.max(22.0)), Sense::hover());
-        ui.painter().galley(pos2(lr.right() - 6.0, lr.center().y - galley.size().y / 2.0), galley, t.text_dim);
+        let elided = galley.elided;
+        ui.painter().galley(pos2(lr.left() + 16.0, lr.center().y - galley.size().y / 2.0), galley, t.text_dim);
+        if elided {
+            resp.on_hover_text(crate::i18n::t(label));
+        }
+        ui.add_space(2.0);
+        ui.set_min_height(PROP_ROW_H);
         add(ui);
     });
+    let bottom = ui.cursor().top().max(top + PROP_ROW_H);
+    let r = ui.max_rect();
+    let rule = Stroke::new(1.0, t.chrome_dark);
+    ui.painter().hline(r.left() + 8.0..=r.right() - 6.0, bottom - 0.5, rule);
+    ui.painter().vline(r.left() + name_w, top..=bottom, rule);
+}
+
+/// A category bar of the property grid (Generale, Geometria…): bold name, a triangle to fold it.
+/// Folded categories are remembered for the session.
+fn prop_group(ui: &mut egui::Ui, title: &str) {
+    PROP_COLLAPSED.with(|c| c.set(false));
+    let t = Tokens::get();
+    let id = egui::Id::new(("prop_group_collapsed", title));
+    let mut collapsed = ui.data(|d| d.get_temp::<bool>(id)).unwrap_or(false);
+    let (r, resp) = ui.allocate_exact_size(vec2(ui.available_width(), 18.0), Sense::click());
+    let bar = Rect::from_min_max(pos2(r.left() + 6.0, r.top()), pos2(r.right() - 4.0, r.bottom()));
+    ui.painter().rect_filled(bar, 0.0, t.chrome_dark);
+    ui.painter().text(
+        pos2(bar.left() + 6.0, bar.center().y),
+        egui::Align2::LEFT_CENTER,
+        crate::i18n::t(title),
+        egui::FontId::new(11.5, egui::FontFamily::Proportional),
+        t.text,
+    );
+    // The title in bold: drawn twice, one pixel apart (the proportional family has no bold face).
+    ui.painter().text(
+        pos2(bar.left() + 6.6, bar.center().y),
+        egui::Align2::LEFT_CENTER,
+        crate::i18n::t(title),
+        egui::FontId::new(11.5, egui::FontFamily::Proportional),
+        t.text,
+    );
+    icons::paint(
+        ui.painter(),
+        Rect::from_center_size(pos2(bar.right() - 9.0, bar.center().y), vec2(9.0, 9.0)),
+        if collapsed { Icon::ChevronLeft } else { Icon::ChevronDown },
+        false,
+    );
+    if resp.clicked() {
+        collapsed = !collapsed;
+        ui.data_mut(|d| d.insert_temp(id, collapsed));
+    }
+    PROP_COLLAPSED.with(|c| c.set(collapsed));
 }
 
 fn value_box(ui: &mut egui::Ui, text: &str, combo: bool, enabled: bool) -> egui::Response {
     let t = Tokens::get();
-    let w = ui.available_width() - 10.0;
-    let (rect, resp) = ui.allocate_exact_size(vec2(w, 20.0), Sense::click());
-    ui.painter().rect_filled(rect, 2.0, if enabled { t.control } else { t.panel });
-    if !enabled {
-        ui.painter().rect_stroke(rect, 2.0, Stroke::new(1.0, t.control), egui::StrokeKind::Inside);
+    let w = ui.available_width() - 6.0;
+    let (rect, resp) = ui.allocate_exact_size(vec2(w, PROP_ROW_H - 1.0), Sense::click());
+    // Flat, as in the reference program's property grid: only a hover tint, no box.
+    if enabled && resp.hovered() {
+        ui.painter().rect_filled(rect, 0.0, t.control_hover.gamma_multiply(0.35));
     }
     ui.painter().text(
-        pos2(rect.left() + 6.0, rect.center().y),
+        pos2(rect.left() + 4.0, rect.center().y),
         egui::Align2::LEFT_CENTER,
         text,
-        crate::theme::body(),
+        crate::theme::small(),
         if enabled { t.text } else { t.text_faint },
     );
-    if combo {
+    if combo && resp.hovered() {
         icons::paint(ui.painter(), Rect::from_center_size(pos2(rect.right() - 10.0, rect.center().y), vec2(11.0, 11.0)), Icon::ChevronDown, false);
     }
     resp
@@ -550,9 +617,9 @@ fn value_box(ui: &mut egui::Ui, text: &str, combo: bool, enabled: bool) -> egui:
 /// An editable numeric/text field that commits on Enter or focus loss.
 fn edit_field(ui: &mut egui::Ui, id: egui::Id, value: String) -> Option<String> {
     let mut buf = ui.data_mut(|d| d.get_temp::<String>(id)).unwrap_or_else(|| value.clone());
-    let w = ui.available_width() - 10.0;
+    let w = ui.available_width() - 6.0;
     let te = id.with("te");
-    let resp = ui.add_sized([w, 20.0], egui::TextEdit::singleline(&mut buf).id(te).font(crate::theme::body()));
+    let resp = ui.add_sized([w, PROP_ROW_H - 1.0], egui::TextEdit::singleline(&mut buf).id(te).font(crate::theme::small()).frame(false).margin(vec2(4.0, 2.0)));
     let mut out = None;
     // Keyboard focus from memory: `Response::has_focus` is false while the window itself is
     // unfocused, which dropped the typed text every frame.
@@ -702,7 +769,7 @@ fn properties_header(app: &mut CadApp, ui: &mut egui::Ui) {
 }
 
 pub(crate) fn properties_section(app: &mut CadApp, ui: &mut egui::Ui) {
-    let t = Tokens::get();
+    PROP_COLLAPSED.with(|c| c.set(false));
     properties_header(app, ui);
     let sel = app.session.selection();
     let Ok(d) = app.session.doc() else { return };
@@ -716,12 +783,9 @@ pub(crate) fn properties_section(app: &mut CadApp, ui: &mut egui::Ui) {
         // Current properties for new objects; each row runs the command that sets it.
         let layers: Vec<String> = d.layers.iter().map(|l| l.name.clone()).collect();
         let linetypes: Vec<String> = d.linetypes.iter().map(|l| l.name.clone()).collect();
-        let text_styles: Vec<String> = d.text_styles.iter().map(|l| l.name.clone()).collect();
-        let dim_styles: Vec<String> = d.dim_styles.iter().map(|l| l.name.clone()).collect();
-        let ml_styles: Vec<String> = d.mleader_styles.iter().map(|l| l.name.clone()).collect();
-        let tb_styles: Vec<String> = d.table_styles.iter().map(|l| l.name.clone()).collect();
         let mut action: Option<(&str, Value)> = None;
         let mut act = |c: &'static str, p: Value| action = Some((c, p));
+        prop_group(ui, "General");
         prop_row(ui, "Color", |ui| {
             ui.menu_button(format!("■ {}", crate::i18n::t(&Color::from_aci(h.i64("CECOLOR", 256) as i16).name())), |ui| {
                 for (n, c) in [
@@ -783,32 +847,9 @@ pub(crate) fn properties_section(app: &mut CadApp, ui: &mut egui::Ui) {
                 act("setvar", json!({ "name": "THICKNESS", "value": f }));
             }
         });
-        prop_row(ui, "Text style", |ui| {
-            if let Some(n) = pick_menu(ui, &h.str("TEXTSTYLE", "Standard"), text_styles) {
-                act("style.current", json!({ "name": n }));
-            }
-        });
-        prop_row(ui, "Dimension style", |ui| {
-            if let Some(n) = pick_menu(ui, &h.str("DIMSTYLE", "Standard"), dim_styles) {
-                act("dimstyle.current", json!({ "name": n }));
-            }
-        });
-        prop_row(ui, "Multileader style", |ui| {
-            if let Some(n) = pick_menu(ui, &h.str("CMLEADERSTYLE", "Standard"), ml_styles) {
-                act("mleaderstyle", json!({ "name": n, "current": true }));
-            }
-        });
-        prop_row(ui, "Table style", |ui| {
-            if let Some(n) = pick_menu(ui, &h.str("CTABLESTYLE", "Standard"), tb_styles) {
-                act("tablestyle", json!({ "name": n, "current": true }));
-            }
-        });
-        prop_row(ui, "Annotation scale", |ui| unavailable(ui, "1:1"));
-        prop_row(ui, "Text height", |ui| {
-            if let Some(f) = number(edit_field(ui, ui.id().with("cur_textsize"), len(h.f64("TEXTSIZE", 0.2))), &mut bad) {
-                act("setvar", json!({ "name": "TEXTSIZE", "value": f }));
-            }
-        });
+        prop_group(ui, "3D Visualization");
+        prop_row(ui, "Material", |ui| read_only(ui, "ByLayer"));
+        prop_group(ui, "Plot style category");
         // The current layout's plot style table; named tables give the current plot style.
         let space = app.session.layout_space();
         let layout = space.layout().and_then(|n| d.layout(n).map(|l| (n.to_string(), l.page.plot_style_table.clone())));
@@ -840,6 +881,31 @@ pub(crate) fn properties_section(app: &mut CadApp, ui: &mut egui::Ui) {
             None => "Not available",
         };
         prop_row(ui, "Plot table type", |ui| read_only(ui, kind));
+        // The view: its centre and size in drawing units, as the reference program lists them.
+        prop_group(ui, "View");
+        let view = app.session.view();
+        let aspect = app.canvas.rect.map_or(1.6, |r| f64::from(r.width() / r.height().max(1.0)));
+        prop_row(ui, "Center X", |ui| read_only(ui, &len(view.center.x)));
+        prop_row(ui, "Center Y", |ui| read_only(ui, &len(view.center.y)));
+        prop_row(ui, "Center Z", |ui| read_only(ui, &len(0.0)));
+        prop_row(ui, "Height", |ui| read_only(ui, &len(view.height)));
+        prop_row(ui, "Width", |ui| read_only(ui, &len(view.height * aspect)));
+        prop_group(ui, "Misc");
+        prop_row(ui, "Annotation scale", |ui| read_only(ui, &h.str("CANNOSCALE", "1:1")));
+        let mut ucs_icon = app.ui.show_ucs_icon;
+        prop_row(ui, "UCS icon On", |ui| {
+            if let Some(v) = pick_menu(ui, if ucs_icon { "Sì" } else { "No" }, ["Sì".to_string(), "No".to_string()]) {
+                ucs_icon = v == "Sì";
+            }
+        });
+        prop_row(ui, "UCS icon at origin", |ui| read_only(ui, "Yes"));
+        prop_row(ui, "UCS per viewport", |ui| read_only(ui, "Yes"));
+        prop_row(ui, "UCS Name", |ui| read_only(ui, ""));
+        prop_row(ui, "Visual Style", |ui| read_only(ui, "Wireframe 2D"));
+        PROP_COLLAPSED.with(|c| c.set(false));
+        if ucs_icon != app.ui.show_ucs_icon {
+            app.ui.show_ucs_icon = ucs_icon;
+        }
         if let Some((c, p)) = action {
             let _ = app.run(c, p);
         }
@@ -878,12 +944,7 @@ pub(crate) fn properties_section(app: &mut CadApp, ui: &mut egui::Ui) {
     let ids: Vec<String> = sel.iter().map(|h| h.hex()).collect();
     let mut set: Option<Value> = None;
     let mut custom_set: Option<Value> = None;
-    let group = |ui: &mut egui::Ui, title: &str| {
-        let (r, _) = ui.allocate_exact_size(vec2(ui.available_width(), 20.0), Sense::hover());
-        ui.painter().rect_filled(r.shrink2(vec2(6.0, 1.0)), 2.0, t.chrome_dark);
-        ui.painter().text(pos2(r.left() + 12.0, r.center().y), egui::Align2::LEFT_CENTER, crate::i18n::t(title), crate::theme::small(), t.text_dim);
-    };
-    group(ui, "General");
+    prop_group(ui, "General");
     prop_row(ui, "Color", |ui| {
         let width = (ui.available_width() - 10.0).max(0.0);
         if let Some(c) = crate::layers::color_button_resolved(
@@ -928,6 +989,7 @@ pub(crate) fn properties_section(app: &mut CadApp, ui: &mut egui::Ui) {
             set = Some(json!({ "handles": ids, "ltscale": f }));
         }
     });
+    prop_row(ui, "Plot style", |ui| read_only(ui, &if e.common.plot_style.is_empty() { "ByColor".to_string() } else { e.common.plot_style.clone() }));
     prop_row(ui, "Lineweight", |ui| {
         ui.menu_button(crate::i18n::t(&lw), |ui| {
             for n in ["ByLayer", "ByBlock", "Default"] {
@@ -972,8 +1034,17 @@ pub(crate) fn properties_section(app: &mut CadApp, ui: &mut egui::Ui) {
             });
         });
     });
+    prop_row(ui, "Hyperlink", |ui| read_only(ui, ""));
+    let thick = same(&|e| len(e.common.thickness));
+    prop_row(ui, "Thickness", |ui| {
+        if let Some(f) = number(edit_field(ui, ui.id().with(("thick", &ids)), thick.clone()), &mut bad) {
+            set = Some(json!({ "handles": ids, "thickness": f }));
+        }
+    });
+    prop_group(ui, "3D Visualization");
+    prop_row(ui, "Material", |ui| read_only(ui, "ByLayer"));
     if sel.len() == 1 {
-        group(ui, "Geometry");
+        prop_group(ui, "Geometry");
         let real = |v: f64| format!("{v:.4}");
         // Rotations show as the drawing measures directions (ANGBASE, ANGDIR).
         let angles = app.session.angle_settings();
@@ -996,6 +1067,7 @@ pub(crate) fn properties_section(app: &mut CadApp, ui: &mut egui::Ui) {
                         set = Some(json!({ "handles": ids, "start": [l.a.x, f] }));
                     }
                 });
+                prop_row(ui, "Start Z", |ui| read_only(ui, &len(l.a.z)));
                 prop_row(ui, "End X", |ui| {
                     if let Some(f) = number(edit_field(ui, ui.id().with(("ex", &ids)), len(l.b.x)), &mut bad) {
                         set = Some(json!({ "handles": ids, "end": [f, l.b.y] }));
@@ -1006,9 +1078,11 @@ pub(crate) fn properties_section(app: &mut CadApp, ui: &mut egui::Ui) {
                         set = Some(json!({ "handles": ids, "end": [l.b.x, f] }));
                     }
                 });
+                prop_row(ui, "End Z", |ui| read_only(ui, &len(l.b.z)));
                 let dlt = l.b.xy() - l.a.xy();
                 prop_row(ui, "Delta X", |ui| read_only(ui, &len(dlt.x)));
                 prop_row(ui, "Delta Y", |ui| read_only(ui, &len(dlt.y)));
+                prop_row(ui, "Delta Z", |ui| read_only(ui, &len(l.b.z - l.a.z)));
                 // Length and angle keep the start point and move the end point.
                 num(ui, "Length", "length", len(dlt.len()), &mut set, &mut bad, &ids);
                 num(ui, "Angle", "angle", real(dlt.angle().to_degrees()), &mut set, &mut bad, &ids);
@@ -1016,10 +1090,15 @@ pub(crate) fn properties_section(app: &mut CadApp, ui: &mut egui::Ui) {
             EntityKind::Circle(c) => {
                 num(ui, "Center X", "cx", len(c.center.x), &mut set, &mut bad, &ids);
                 num(ui, "Center Y", "cy", len(c.center.y), &mut set, &mut bad, &ids);
+                prop_row(ui, "Center Z", |ui| read_only(ui, &len(c.center.z)));
                 num(ui, "Radius", "radius", len(c.radius), &mut set, &mut bad, &ids);
                 num(ui, "Diameter", "diameter", len(c.radius * 2.0), &mut set, &mut bad, &ids);
                 num(ui, "Circumference", "circumference", len(c.radius * std::f64::consts::TAU), &mut set, &mut bad, &ids);
                 num(ui, "Area", "area", real(c.radius * c.radius * std::f64::consts::PI), &mut set, &mut bad, &ids);
+                let n = e.common.extrusion;
+                prop_row(ui, "Normal X", |ui| read_only(ui, &real(n.x)));
+                prop_row(ui, "Normal Y", |ui| read_only(ui, &real(n.y)));
+                prop_row(ui, "Normal Z", |ui| read_only(ui, &real(n.z)));
                 if let Some(v) = &mut set
                     && let Some(o) = v.as_object_mut()
                 {
@@ -1118,7 +1197,7 @@ pub(crate) fn properties_section(app: &mut CadApp, ui: &mut egui::Ui) {
                 num(ui, "Rotation", "rotation", real(angles.shown(i.rotation).to_degrees()), &mut set, &mut bad, &ids);
                 num(ui, "Scale", "scale", real(i.scale.x), &mut set, &mut bad, &ids);
                 if let Some((_, props)) = custom.filter(|(_, p)| !p.is_empty()) {
-                    group(ui, "Custom");
+                    prop_group(ui, "Custom");
                     for p in &props {
                         prop_row(ui, &p.name, |ui| {
                             let picked = match (p.editable, p.choices.is_empty()) {
@@ -1139,6 +1218,7 @@ pub(crate) fn properties_section(app: &mut CadApp, ui: &mut egui::Ui) {
             _ => {}
         }
     }
+    PROP_COLLAPSED.with(|c| c.set(false));
     if let Some(mut p) = set {
         // A rotation is typed as shown (from ANGBASE, in the ANGDIR sense); properties.set takes it
         // from +X counterclockwise.

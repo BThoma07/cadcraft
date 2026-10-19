@@ -1082,7 +1082,7 @@ menu	Modify	Edita
 	Thaw All Layers	Scongela tutti i layer
 	Thaw Layer	Scongela layer
 	There is nothing here yet.	Qui non c'è ancora niente.
-	Thickness	Altezza oggetto
+	Thickness	Spessore
 	Time	Tempo
 	To get started, create or open a drawing.	Per iniziare, crea o apri un disegno.
 	Tool Bar	Barra degli strumenti
@@ -1259,3 +1259,21 @@ menu	Modify	Edita
 	Discard	Scarta
 	Customize	Personalizza
 	Edit Command Aliases (PGP)...	Modifica alias dei comandi (PGP)...
+	3D Visualization	Visualizzazione 3D
+	Misc	Varie
+	Material	Materiale
+	Width	Larghezza
+	UCS icon On	Icona UCS On
+	UCS icon at origin	Icona UCS nell'origine
+	UCS per viewport	UCS per finestra
+	UCS Name	Nome UCS
+	Visual Style	Stile di visualizzazione
+	Hyperlink	Collegamento ipertestuale
+	Start Z	Z iniziale
+	End Z	Z finale
+	Delta Z	Delta Z
+	Normal X	X normale
+	Normal Y	Y normale
+	Normal Z	Z normale
+	Wireframe 2D	Wireframe 2D
+	Plot style category	Stile di stampa

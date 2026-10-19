@@ -39,13 +39,30 @@ fn la_finestra_e_come_autocad() {
             std::fs::create_dir_all(&dir).unwrap();
             h.render().unwrap().save(format!("{dir}/autocad-it-{tab}.png")).unwrap();
         }
+        // A label can be on a tab and a button both (Inserisci): any match will do.
         for label in ["Inizio", "Inserisci", "Annota", "Output"] {
-            assert!(h.query_by_label(label).is_some(), "{tab}: no ribbon tab {label}");
+            assert!(h.query_all_by_label(label).next().is_some(), "{tab}: no ribbon tab {label}");
+        }
+    }
+    // The Properties palette with a line, then a circle, selected.
+    for (kind, name) in [("LINE", "linea"), ("CIRCLE", "cerchio")] {
+        let mut h = harness("home");
+        let handle = {
+            let app = h.state();
+            let d = app.session.doc().unwrap();
+            d.model.iter().find(|e| e.kind.type_name().eq_ignore_ascii_case(kind)).map(|e| e.handle.hex())
+        };
+        if let Some(handle) = handle {
+            h.state_mut().run("select", serde_json::json!({ "handles": [handle] })).unwrap();
+            h.run_steps(4);
+            if let Ok(dir) = std::env::var("CRAFT_UI_VISUAL_DIR") {
+                h.render().unwrap().save(format!("{dir}/autocad-it-proprieta-{name}.png")).unwrap();
+            }
         }
     }
     let h = harness("home");
     for label in ["Linea", "Polilinea", "Cerchio", "Sposta", "Taglia", "Testo", "Quota", "Inserisci"] {
-        assert!(h.query_by_label(label).is_some(), "no ribbon button {label}");
+        assert!(h.query_all_by_label(label).next().is_some(), "no ribbon button {label}");
     }
 }
 

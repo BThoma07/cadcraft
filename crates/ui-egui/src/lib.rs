@@ -441,6 +441,7 @@ impl CadApp {
         self.ui.show_palettes = true;
         self.ui.in_window_menu = !cfg!(target_os = "macos");
         self.ui.theme = theme::ThemePref::Dark;
+        self.ui.docking = docking::Workspace::autocad();
         if self.options.model_background.is_none() {
             self.options.model_background = Some(egui::Color32::BLACK);
         }

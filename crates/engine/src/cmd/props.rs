@@ -232,6 +232,10 @@ fn run_set(s: &mut Session, p: &Value) -> Result<Value> {
             if let Some(v) = p.get("visible").and_then(Value::as_bool) {
                 e.common.visible = v;
             }
+            // Thickness (the Properties palette's Spessore): the extrusion height of 2D objects.
+            if let Some(v) = p.get("thickness").and_then(Value::as_f64).filter(|v| v.is_finite()) {
+                e.common.thickness = v;
+            }
             let num = |k: &str| p.get(k).and_then(Value::as_f64).filter(|v| v.is_finite());
             match &mut e.kind {
                 EntityKind::Line(l) => {
