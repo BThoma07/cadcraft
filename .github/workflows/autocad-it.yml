@@ -28,14 +28,20 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Librerie di sistema (grafica software per le schermate)
         run: sudo apt-get update && sudo apt-get install -y mesa-vulkan-drivers libxkbcommon-dev libgtk-3-dev
-      - name: Prove dei comandi italiani
-        run: cargo test -p cadcraft-engine --lib italiano && cargo test -p cadcraft-engine --test aliases
-      - name: Prove della finestra
+      - name: Prove dei comandi italiani e della finestra
         env:
           CRAFT_UI_VISUAL_DIR: ${{ github.workspace }}/schermate
+        shell: bash
         run: |
-          cargo test -p cadcraft-ui-egui --test autocad_edition -- --nocapture
-          cargo test -p cadcraft-ui-egui --lib -- ribbon cmdline
+          set -o pipefail
+          rc=0
+          for t in "-p cadcraft-engine --lib italiano" "-p cadcraft-engine --test aliases" "-p cadcraft-ui-egui --test autocad_edition" "-p cadcraft-ui-egui --test alias_dialog" "-p cadcraft-ui-egui --lib ribbon" "-p cadcraft-ui-egui --lib cmdline"; do
+            echo "=== cargo test $t"
+            cargo test $t 2>&1 | tee -a prove.log || rc=1
+          done
+          # The failures as annotations, readable without logging in.
+          grep -E "panicked at|^error(\[|:)|assertion|left:|right:|---- .* stdout ----|^  [a-z_:]+$" prove.log | head -60 | while IFS= read -r l; do echo "::error::$l"; done
+          exit $rc
       - name: Tutte le altre prove (solo informative)
         continue-on-error: true
         run: cargo test -p cadcraft-engine -p cadcraft-ui-egui 2>&1 | tail -150
