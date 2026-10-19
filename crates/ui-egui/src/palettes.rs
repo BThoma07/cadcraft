@@ -619,7 +619,7 @@ fn edit_field(ui: &mut egui::Ui, id: egui::Id, value: String) -> Option<String> 
     let mut buf = ui.data_mut(|d| d.get_temp::<String>(id)).unwrap_or_else(|| value.clone());
     let w = ui.available_width() - 6.0;
     let te = id.with("te");
-    let resp = ui.add_sized([w, PROP_ROW_H - 1.0], egui::TextEdit::singleline(&mut buf).id(te).font(crate::theme::small()).frame(false).margin(egui::Margin::symmetric(4, 2)));
+    let resp = ui.add_sized([w, PROP_ROW_H - 1.0], egui::TextEdit::singleline(&mut buf).id(te).font(crate::theme::small()).frame(egui::Frame::NONE).margin(egui::Margin::symmetric(4, 2)));
     let mut out = None;
     // Keyboard focus from memory: `Response::has_focus` is false while the window itself is
     // unfocused, which dropped the typed text every frame.
@@ -883,7 +883,7 @@ pub(crate) fn properties_section(app: &mut CadApp, ui: &mut egui::Ui) {
         prop_row(ui, "Plot table type", |ui| read_only(ui, kind));
         // The view: its centre and size in drawing units, as the reference program lists them.
         prop_group(ui, "View");
-        let view = app.session.view();
+        let view = app.session.state().map(|s| s.view()).unwrap_or_default();
         let aspect = app.canvas.rect.map_or(1.6, |r| f64::from(r.width() / r.height().max(1.0)));
         prop_row(ui, "Center X", |ui| read_only(ui, &len(view.center.x)));
         prop_row(ui, "Center Y", |ui| read_only(ui, &len(view.center.y)));
