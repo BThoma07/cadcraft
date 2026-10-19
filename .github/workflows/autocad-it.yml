@@ -1,0 +1,81 @@
+# CADCraft, edizione italiana stile AutoCAD: prova il codice, salva le schermate della finestra e
+# crea l'installatore per Windows (.msi) e la versione portatile (.zip) da scaricare e condividere.
+name: Edizione AutoCAD IT
+
+on:
+  push:
+    branches: [autocad-it]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: autocad-it-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+
+jobs:
+  test:
+    name: Prove e schermate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Librerie di sistema (grafica software per le schermate)
+        run: sudo apt-get update && sudo apt-get install -y mesa-vulkan-drivers libxkbcommon-dev libgtk-3-dev
+      - name: Prove dei comandi italiani
+        run: cargo test -p cadcraft-engine --lib italiano && cargo test -p cadcraft-engine --test aliases
+      - name: Prove della finestra
+        env:
+          CRAFT_UI_VISUAL_DIR: ${{ github.workspace }}/schermate
+        run: |
+          cargo test -p cadcraft-ui-egui --test autocad_edition -- --nocapture
+          cargo test -p cadcraft-ui-egui --lib -- ribbon cmdline
+      - name: Tutte le altre prove (solo informative)
+        continue-on-error: true
+        run: cargo test -p cadcraft-engine -p cadcraft-ui-egui 2>&1 | tail -150
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: schermate
+          path: schermate/*.png
+          if-no-files-found: warn
+
+  windows:
+    name: Installatore Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+      - uses: Swatinem/rust-cache@v2
+      - name: WiX (installatore .msi)
+        shell: pwsh
+        run: |
+          dotnet tool install --global wix --version 5.0.2
+          wix extension add -g WixToolset.UI.wixext/5.0.2
+      - name: Compila e crea l'installatore
+        shell: pwsh
+        env:
+          CADCRAFT_VERSION: 0.9.0-it.${{ github.run_number }}
+        run: pwsh packaging/windows/package.ps1 -Arch x64
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CADCraft-IT-Windows
+          path: dist/release/*
+      - name: Pubblica la versione da scaricare
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: it-${{ github.run_number }}
+          name: CADCraft edizione italiana (stile AutoCAD) n. ${{ github.run_number }}
+          make_latest: true
+          body: |
+            Installatore per Windows: scarica il file `.msi` qui sotto e aprilo.
+            In alternativa, il file `-portable.zip` non richiede installazione.
+          files: dist/release/*

@@ -1,0 +1,61 @@
+//! The Italian AutoCAD-style edition: the window laid out as AutoCAD 2025 for Windows (menu bar,
+//! ribbon, Properties on the right, black model space), the Italian command names and aliases.
+//! With CRAFT_UI_VISUAL_DIR set, the window is also saved as PNGs to look at.
+
+use cadcraft_engine::Session;
+use cadcraft_engine::cmd::resolve_alias;
+use cadcraft_ui_egui::{CadApp, Services};
+use egui::vec2;
+use egui_kittest::Harness;
+use egui_kittest::kittest::Queryable;
+
+fn harness(tab: &str) -> Harness<'static, CadApp> {
+    let mut app = CadApp::new(Session::default(), Services::default());
+    app.run("new", serde_json::json!({})).unwrap();
+    app.ui.start_tab = false;
+    app.apply_autocad_edition();
+    app.ui.in_window_menu = true;
+    app.ui.ribbon_tab = tab.into();
+    for c in ["rectang 0,0 400,250", "circle 200,125 80", "line 0,0 400,250 ", "pline 50,50 350,50 350,200 "] {
+        let _ = app.session.cmdline(c);
+    }
+    let _ = app.run("zoom.extents", serde_json::json!({}));
+    let mut h = Harness::builder().with_size(vec2(1600.0, 900.0)).with_pixels_per_point(1.0).build_ui_state(
+        |ui, app: &mut CadApp| {
+            app.logic(&ui.ctx().clone());
+            app.ui(ui);
+        },
+        app,
+    );
+    h.run_steps(6);
+    h
+}
+
+#[test]
+fn la_finestra_e_come_autocad() {
+    for tab in ["home", "insert", "annotate", "parametric", "view", "manage", "output"] {
+        let mut h = harness(tab);
+        if let Ok(dir) = std::env::var("CRAFT_UI_VISUAL_DIR") {
+            std::fs::create_dir_all(&dir).unwrap();
+            h.render().unwrap().save(format!("{dir}/autocad-it-{tab}.png")).unwrap();
+        }
+        for label in ["Inizio", "Inserisci", "Annota", "Output"] {
+            assert!(h.query_by_label(label).is_some(), "{tab}: no ribbon tab {label}");
+        }
+    }
+    let h = harness("home");
+    for label in ["Linea", "Polilinea", "Cerchio", "Sposta", "Taglia", "Testo", "Quota", "Inserisci"] {
+        assert!(h.query_by_label(label).is_some(), "no ribbon button {label}");
+    }
+}
+
+#[test]
+fn comandi_italiani_e_alias() {
+    for (typed, id) in [("linea", "line"), ("SPOSTA", "move"), ("taglia", "trim"), ("cerchio", "circle"), ("tt", "trim"), ("2", "line"), ("rr", "hatch"), ("u", "join"), ("c", "copy"), ("e", "extend")] {
+        assert_eq!(resolve_alias(typed), id, "{typed}");
+    }
+    let mut s = Session::new();
+    s.cmdline("cerchio 0,0 5").unwrap();
+    s.cmdline("_circle 10,0 5").unwrap();
+    assert_eq!(s.doc().unwrap().model.iter().count(), 2);
+}

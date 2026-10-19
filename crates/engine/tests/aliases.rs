@@ -35,7 +35,7 @@ fn an_alias_file_adds_and_overrides_aliases() {
     assert_eq!(resolve_alias("ZZC"), "circle");
     assert_eq!(resolve_alias("l"), "pline", "the file overrides a built-in alias");
     assert_eq!(resolve_alias("line"), "line", "command names win");
-    assert_eq!(resolve_alias("c"), "circle", "built-in aliases the file doesn't mention stay");
+    assert_eq!(resolve_alias("ce"), "circle", "the Italian edition's aliases the file doesn't mention stay");
 
     // Typed at the command line like any alias.
     s.cmdline("zzc 0,0 3").unwrap();

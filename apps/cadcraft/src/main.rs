@@ -325,6 +325,8 @@ fn main() -> eframe::Result {
             if let Some(prefs) = cc.storage.and_then(|s| s.get_string(cadcraft_ui_egui::PREFS_KEY)) {
                 app.load_prefs(&prefs);
             }
+            // Italian edition: lay the window out as AutoCAD for Windows the first time.
+            app.apply_autocad_edition();
             if let Some(prefs) = cc.storage.and_then(|s| s.get_string(cadcraft_ui_egui::autosave::PREFS_KEY)) {
                 cadcraft_ui_egui::autosave::load_prefs(&prefs);
             }
@@ -359,6 +361,14 @@ fn main() -> eframe::Result {
             if app.session.docs.is_empty() {
                 app.session.new_drawing(false);
             }
+            // Italian edition: the command aliases of the user's own alias file, read at startup
+            // as the reference program does.
+            if let Some(pgp) = user_alias_file(config_dir().map(|d| d.join("support")).as_deref()) {
+                match app.session.execute("aliasedit", &serde_json::json!({ "file": pgp.to_string_lossy() })) {
+                    Ok(r) => log::info!("aliases from {}: {}", pgp.display(), r["loaded"]),
+                    Err(e) => log::warn!("aliases from {}: {e}", pgp.display()),
+                }
+            }
             let ctx = cc.egui_ctx.clone();
             let desktop_theme = desktop_theme::DesktopTheme::start(move || ctx.request_repaint());
             let ctx = cc.egui_ctx.clone();
@@ -375,6 +385,36 @@ fn main() -> eframe::Result {
             }))
         }),
     )
+}
+
+/// The alias file to read at startup: `acad.pgp` in CADCraft's support folder, otherwise the one
+/// of the newest installed version of the reference CAD program (its roaming Support folder), so
+/// someone moving over keeps their shortcuts without doing anything.
+fn user_alias_file(support: Option<&std::path::Path>) -> Option<std::path::PathBuf> {
+    if let Some(f) = support.map(|d| d.join("acad.pgp")).filter(|f| f.is_file()) {
+        return Some(f);
+    }
+    let roaming = std::env::var_os("APPDATA").map(std::path::PathBuf::from)?;
+    let mut found: Vec<(std::time::SystemTime, std::path::PathBuf)> = Vec::new();
+    // %APPDATA%\Autodesk\AutoCAD 2025\R25.0\ita\Support\acad.pgp (and LT, other languages).
+    for product in std::fs::read_dir(roaming.join("Autodesk")).ok()?.flatten() {
+        for release in std::fs::read_dir(product.path()).into_iter().flatten().flatten() {
+            for lang in std::fs::read_dir(release.path()).into_iter().flatten().flatten() {
+                let f = lang.path().join("Support").join("acad.pgp");
+                if let Ok(m) = std::fs::metadata(&f)
+                    && m.is_file()
+                {
+                    let name = product.file_name().to_string_lossy().to_ascii_lowercase();
+                    let lt = name.contains(" lt");
+                    let when = std::fs::metadata(release.path()).and_then(|m| m.modified()).unwrap_or(std::time::UNIX_EPOCH);
+                    // Prefer the full program over LT, then the newest release folder.
+                    found.push((if lt { std::time::UNIX_EPOCH } else { when }, f));
+                }
+            }
+        }
+    }
+    found.sort();
+    found.pop().map(|(_, f)| f)
 }
 
 #[cfg(test)]

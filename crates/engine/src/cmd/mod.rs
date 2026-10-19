@@ -47,6 +47,7 @@ mod view;
 
 pub mod curves;
 pub mod helpers;
+pub mod italiano;
 pub mod machines;
 pub mod options;
 
@@ -217,13 +218,36 @@ pub fn find_command(id: &str) -> Option<&'static CommandSpec> {
 
 /// Resolve a typed name or alias (AutoCAD-style short names such as `L`, `C`, `PL`) to an id.
 /// Command names win; the user's aliases (ALIASEDIT, REINIT) come before the built-in ones.
+///
+/// Italian edition: the user's aliases come first (as in the reference program, an alias such as
+/// `U` may stand for UNISCI), then the Italian command names (LINEA, TAGLIA…), then the English
+/// command ids, then the Italian edition's default aliases and the built-in ones.
 pub fn resolve_alias(name: &str) -> String {
+    let l = name.to_ascii_lowercase();
+    if let Some(id) = file::user_alias(&l) {
+        return id;
+    }
+    if let Some(id) = italiano::alias(&l).filter(|_| l.chars().count() <= 2 && find_command(&l).is_some()) {
+        return id.to_string();
+    }
+    if let Some(id) = italiano::command(&l) {
+        return id.to_string();
+    }
+    resolve_global(&l)
+}
+
+/// Resolve a name typed with a leading underscore (`_LINE`): the English command ids and the
+/// built-in aliases only, as in the Italian edition of the reference program.
+pub fn resolve_global(name: &str) -> String {
     let l = name.to_ascii_lowercase();
     if find_command(&l).is_some() {
         return l;
     }
     if let Some(id) = file::user_alias(&l) {
         return id;
+    }
+    if let Some(id) = italiano::alias(&l) {
+        return id.to_string();
     }
     command_specs().iter().find(|c| c.aliases.iter().any(|a| a.eq_ignore_ascii_case(&l))).map(|c| c.id.to_string()).unwrap_or(l)
 }

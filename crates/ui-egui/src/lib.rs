@@ -43,6 +43,7 @@ pub mod palettes;
 pub mod parametric;
 pub mod plotstyles;
 pub mod quick;
+pub mod ribbon;
 pub mod shortcut_menus;
 pub mod theme;
 pub mod viewcube;
@@ -74,6 +75,14 @@ pub struct UiState {
     pub show_toolsets: bool,
     pub show_palettes: bool,
     pub show_toolbar: bool,
+    /// The ribbon (Inizio, Inserisci, Annota…) of the Windows edition of the reference program.
+    pub show_ribbon: bool,
+    /// The ribbon tab shown.
+    pub ribbon_tab: String,
+    /// The ribbon minimised to its tab titles.
+    pub ribbon_minimized: bool,
+    /// The Italian AutoCAD-style setup ([`CadApp::apply_autocad_edition`]) was applied once.
+    pub autocad_edition: bool,
     pub show_file_tabs: bool,
     pub show_status_bar: bool,
     pub show_command_line: bool,
@@ -160,6 +169,10 @@ impl Default for UiState {
             show_toolsets: true,
             show_palettes: true,
             show_toolbar: true,
+            show_ribbon: false,
+            ribbon_tab: "home".into(),
+            ribbon_minimized: false,
+            autocad_edition: false,
             show_file_tabs: true,
             show_status_bar: true,
             show_command_line: true,
@@ -412,6 +425,27 @@ impl CadApp {
         }
     }
 
+    /// The Italian edition's first-run setup, laid out as AutoCAD 2025 for Windows in Italian:
+    /// Italian interface, menu bar and ribbon instead of the Tool Bar and Tool Sets, Properties
+    /// on the right, black model space. Applied once; the user's later changes are kept.
+    pub fn apply_autocad_edition(&mut self) {
+        if self.ui.autocad_edition {
+            return;
+        }
+        self.ui.autocad_edition = true;
+        self.ui.interface_language = i18n::Preference::Italian;
+        self.ui.show_ribbon = true;
+        self.ui.ribbon_tab = "home".into();
+        self.ui.show_toolbar = false;
+        self.ui.show_toolsets = false;
+        self.ui.show_palettes = true;
+        self.ui.in_window_menu = !cfg!(target_os = "macos");
+        self.ui.theme = theme::ThemePref::Dark;
+        if self.options.model_background.is_none() {
+            self.options.model_background = Some(egui::Color32::BLACK);
+        }
+    }
+
     pub fn set_status(&mut self, s: impl Into<String>) {
         self.status = Some((s.into(), now_ms()));
     }
@@ -632,10 +666,14 @@ impl CadApp {
         let t0 = now_ms();
         control::begin_frame(ui.ctx());
         let t = theme::Tokens::get();
-        chrome::title_and_toolbar(self, ui);
+        // As in the Windows edition of the reference program: the menu bar, then the ribbon.
         if self.ui.in_window_menu {
             menus::menu_bar(self, ui);
         }
+        if self.ui.show_ribbon {
+            ribbon::show(self, ui);
+        }
+        chrome::title_and_toolbar(self, ui);
         if self.ui.show_status_bar {
             chrome::status_bar(self, ui);
         }
@@ -643,7 +681,7 @@ impl CadApp {
             chrome::file_tabs(self, ui);
         }
         let has_doc = !self.session.docs.is_empty() && !self.ui.start_tab;
-        if has_doc && !self.ui.show_toolsets {
+        if has_doc && !self.ui.show_toolsets && !self.ui.show_ribbon {
             palettes::toolsets_strip(self, ui);
         }
         egui::CentralPanel::default().frame(egui::Frame::NONE.fill(t.canvas)).show(ui, |ui| {

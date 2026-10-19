@@ -123,10 +123,23 @@ fn suggestions(prefix: &str) -> Vec<Suggestion> {
     if let Some(spec) = cadcraft_engine::cmd::find_command(&resolved)
         && !spec.id.contains('.')
     {
-        let display =
-            if spec.id == p { spec.id.to_ascii_uppercase() } else { format!("{} ({})", p.to_ascii_uppercase(), spec.id.to_ascii_uppercase()) };
-        out.push(Suggestion { id: spec.id.to_ascii_uppercase(), display, label: spec.label });
+        // Italian edition: show the Italian name (TT (TAGLIA)) and type what the user typed.
+        let shown = cadcraft_engine::cmd::italiano::name_of(spec.id).unwrap_or(spec.id).to_ascii_uppercase();
+        let display = if shown.eq_ignore_ascii_case(&p) || spec.id == p { shown } else { format!("{} ({shown})", p.to_ascii_uppercase()) };
+        out.push(Suggestion { id: p.to_ascii_uppercase(), display, label: spec.label });
         seen_ids.insert(spec.id);
+    }
+
+    // 1b. Italian command names that start with the prefix (LIN → LINEA).
+    let mut it_matches: Vec<(&'static str, &'static cadcraft_engine::CommandSpec)> = cadcraft_engine::cmd::italiano::names()
+        .filter(|(n, _)| n.starts_with(&p))
+        .filter_map(|(n, id)| cadcraft_engine::cmd::find_command(id).map(|c| (n, c)))
+        .collect();
+    it_matches.sort_by_key(|(n, _)| (n.len(), *n));
+    for (n, c) in it_matches {
+        if seen_ids.insert(c.id) {
+            out.push(Suggestion { id: n.to_ascii_uppercase(), display: n.to_ascii_uppercase(), label: c.label });
+        }
     }
 
     // 2. Command ID prefix matches (excluding already matched exact command).
@@ -812,7 +825,7 @@ mod autocomplete_tests {
 
         let line = suggestions("line");
         assert_eq!(line[0].id, "LINE");
-        assert_eq!(line[0].display, "LINE");
+        assert_eq!(line[0].display, "LINEA", "the Italian name is shown");
     }
 
     #[test]

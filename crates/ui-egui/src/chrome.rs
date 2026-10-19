@@ -297,7 +297,7 @@ fn visible_tabs(widths: &[f32], active: Option<usize>, room: f32) -> std::ops::R
 /// Status bar: layout tabs on the left, coordinates and drafting toggles on the right.
 pub fn status_bar(app: &mut CadApp, ui: &mut egui::Ui) {
     let t = Tokens::get();
-    egui::Panel::bottom("cc_status").exact_size(26.0).frame(egui::Frame::NONE.fill(t.chrome)).show(ui, |ui| {
+    egui::Panel::bottom("cc_status").exact_size(26.0).frame(egui::Frame::NONE.fill(t.chrome_dark)).show(ui, |ui| {
         let r = ui.max_rect();
         let p = ui.painter().clone();
         let mut x = r.left() + 8.0;

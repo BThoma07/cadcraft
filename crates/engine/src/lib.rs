@@ -955,9 +955,12 @@ impl Session {
             None => (false, name),
         };
         let lower = name.trim_start_matches(['_', '.', '-']).to_ascii_lowercase();
+        // `_LINE`: the English (global) command name, never an Italian name or a user alias.
+        let global = name.trim_start_matches('.').starts_with('_');
+        let resolve = |n: &str| if global { cmd::resolve_global(n) } else { cmd::resolve_alias(n) };
         // A command-line form with an id of its own (-ATTEDIT) is not the command it prefixes.
-        let dashed = cmd::resolve_alias(&name.trim_start_matches(['_', '.']).to_ascii_lowercase());
-        let id = if find_command(&dashed).is_some() { dashed } else { cmd::resolve_alias(&lower) };
+        let dashed = resolve(&name.trim_start_matches(['_', '.']).to_ascii_lowercase());
+        let id = if find_command(&dashed).is_some() { dashed } else { resolve(&lower) };
         let Some(spec) = find_command(&id) else {
             // A command defined in LISP: (defun c:NAME …).
             if !transparent && let Some(f) = self.lisp_command(&lower) {

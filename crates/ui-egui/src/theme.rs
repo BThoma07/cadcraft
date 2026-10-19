@@ -129,7 +129,8 @@ pub struct Tokens {
 impl Tokens {
     pub const DARK: Tokens = Tokens {
         chrome: Color32::from_rgb(0x3b, 0x44, 0x53),
-        chrome_dark: Color32::from_rgb(0x31, 0x38, 0x44),
+        // The menu bar, tab strips and status bar of the reference program's dark theme.
+        chrome_dark: Color32::from_rgb(0x22, 0x29, 0x33),
         panel: Color32::from_rgb(0x3c, 0x44, 0x52),
         tab_active: Color32::from_rgb(0x4e, 0x5a, 0x6e),
         control: Color32::from_rgb(0x50, 0x5a, 0x6d),
@@ -170,7 +171,8 @@ impl Tokens {
         list_bg: Color32::from_rgb(0x2b, 0x31, 0x3b),
         list_row: Color32::from_rgb(0x3a, 0x42, 0x50),
         warn: Color32::from_rgb(0xff, 0xd0, 0x80),
-        crosshair: Color32::from_rgb(0xe8, 0xe8, 0xe8),
+        // Cyan crosshair, as in the AutoCAD this edition was set up from.
+        crosshair: Color32::from_rgb(0x00, 0xe0, 0xe0),
         paper: Color32::WHITE,
     };
 

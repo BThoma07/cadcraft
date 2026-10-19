@@ -45,7 +45,7 @@ pub(crate) fn user_alias(name: &str) -> Option<String> {
 /// The command id `target` names (`*LINE`, `_.line`, `-LAYER`…), if there is such a command.
 pub fn command_id(target: &str) -> Option<String> {
     let t = target.trim().trim_start_matches('*').trim().trim_start_matches(['_', '.']).to_ascii_lowercase();
-    find_command(&t).map(|c| c.id.to_string())
+    find_command(&t).map(|c| c.id.to_string()).or_else(|| crate::cmd::italiano::command(&t).map(str::to_string))
 }
 
 /// Whether `a` can be typed as an alias: one word of printable characters, not a command name.
@@ -55,7 +55,11 @@ pub fn alias_name(a: &str) -> std::result::Result<String, String> {
         return Err(format!("`{a}` can't be an alias"));
     }
     let l = a.to_ascii_lowercase();
-    if find_command(&l).is_some() {
+    // Italian edition: a one- or two-letter alias may reuse an English command id (`U` for
+    // UNISCI, as in the Italian reference program, where U is not a command); `_U` still types
+    // the English command. Longer command names and the Italian names stay the commands.
+    let short_id = l.chars().count() <= 2;
+    if crate::cmd::italiano::command(&l).is_some() || (!short_id && find_command(&l).is_some()) {
         return Err(format!("{a} is a command name; it stays the command"));
     }
     Ok(l)
