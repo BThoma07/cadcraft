@@ -537,7 +537,7 @@ fn prop_row(ui: &mut egui::Ui, label: &str, add: impl FnOnce(&mut egui::Ui)) {
         ui.spacing_mut().item_spacing = vec2(0.0, 0.0);
         let (lr, resp) = ui.allocate_exact_size(vec2(name_w, PROP_ROW_H), Sense::hover());
         let mut job = egui::text::LayoutJob::simple_singleline(crate::i18n::t(label).to_string(), crate::theme::small(), t.text_dim);
-        job.wrap = egui::text::TextWrapping::truncate_at_width(name_w - 18.0);
+        job.wrap = egui::text::TextWrapping { max_width: (name_w - 18.0).max(0.0), max_rows: 1, break_anywhere: true, overflow_character: Some('…') };
         let galley = ui.painter().layout_job(job);
         let elided = galley.elided;
         ui.painter().galley(pos2(lr.left() + 16.0, lr.center().y - galley.size().y / 2.0), galley, t.text_dim);
@@ -619,7 +619,7 @@ fn edit_field(ui: &mut egui::Ui, id: egui::Id, value: String) -> Option<String> 
     let mut buf = ui.data_mut(|d| d.get_temp::<String>(id)).unwrap_or_else(|| value.clone());
     let w = ui.available_width() - 6.0;
     let te = id.with("te");
-    let resp = ui.add_sized([w, PROP_ROW_H - 1.0], egui::TextEdit::singleline(&mut buf).id(te).font(crate::theme::small()).frame(false).margin(vec2(4.0, 2.0)));
+    let resp = ui.add_sized([w, PROP_ROW_H - 1.0], egui::TextEdit::singleline(&mut buf).id(te).font(crate::theme::small()).frame(false).margin(egui::Margin::symmetric(4, 2)));
     let mut out = None;
     // Keyboard focus from memory: `Response::has_focus` is false while the window itself is
     // unfocused, which dropped the typed text every frame.

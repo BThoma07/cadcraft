@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  CARGO_TERM_COLOR: always
+  CARGO_TERM_COLOR: never
   CARGO_INCREMENTAL: 0
 
 jobs:
@@ -40,7 +40,7 @@ jobs:
             cargo test $t 2>&1 | tee -a prove.log || rc=1
           done
           # The failures as annotations, readable without logging in.
-          grep -E "panicked at|^error(\[|:)|assertion|left:|right:|---- .* stdout ----|^  [a-z_:]+$" prove.log | head -60 | while IFS= read -r l; do echo "::error::$l"; done
+          grep -E -A3 "panicked at|^error(\[|:)|assertion|left:|right:|---- .* stdout ----" prove.log | grep -v "^--$" | head -80 | while IFS= read -r l; do echo "::error::$l"; done
           exit $rc
       - name: Tutte le altre prove (solo informative)
         continue-on-error: true
@@ -70,7 +70,11 @@ jobs:
         shell: pwsh
         env:
           CADCRAFT_VERSION: 0.9.0-it.${{ github.run_number }}
-        run: pwsh packaging/windows/package.ps1 -Arch x64
+        run: |
+          pwsh packaging/windows/package.ps1 -Arch x64 2>&1 | Tee-Object -FilePath build.log
+          $code = $LASTEXITCODE
+          Select-String -Path build.log -Pattern '^error' -Context 0,4 | Select-Object -First 15 | ForEach-Object { Write-Output "::error::$($_.Line) $($_.Context.PostContext -join ' | ')" }
+          if ($code -ne 0 -or -not (Test-Path dist/release)) { exit 1 }
       - uses: actions/upload-artifact@v4
         with:
           name: CADCraft-IT-Windows

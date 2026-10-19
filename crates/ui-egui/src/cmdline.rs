@@ -125,7 +125,7 @@ fn suggestions(prefix: &str) -> Vec<Suggestion> {
     {
         // Italian edition: show the Italian name (TT (TAGLIA)) and type what the user typed.
         let shown = cadcraft_engine::cmd::italiano::name_of(spec.id).unwrap_or(spec.id).to_ascii_uppercase();
-        let display = if shown.eq_ignore_ascii_case(&p) || spec.id == p { shown } else { format!("{} ({shown})", p.to_ascii_uppercase()) };
+        let display = if shown.eq_ignore_ascii_case(&p) || spec.id == p { shown.clone() } else { format!("{} ({shown})", p.to_ascii_uppercase()) };
         // Tab completes to the Italian name, as the Italian edition does (REC → RETTANGOLO).
         out.push(Suggestion { id: shown.clone(), display, label: spec.label });
         seen_ids.insert(spec.id);

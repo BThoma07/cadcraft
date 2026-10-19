@@ -259,10 +259,10 @@ const QUICK: &[Btn] = &[
     (Icon::Redo, "redo", "Ripristina"),
 ];
 
-const TAB_H: f32 = 24.0;
-const BODY_H: f32 = 74.0;
-const TITLE_H: f32 = 18.0;
-const ROW_H: f32 = 22.0;
+const TAB_H: f32 = 20.0;
+const BODY_H: f32 = 58.0;
+const TITLE_H: f32 = 15.0;
+const ROW_H: f32 = 18.0;
 const PAD: f32 = 6.0;
 
 /// Every command a ribbon button starts, for the test that they all exist.
@@ -337,7 +337,7 @@ fn tab_row(app: &mut CadApp, ui: &mut egui::Ui, row: Rect, action: &mut Option<A
     let mut x = row.left() + 6.0;
     // Quick access tools.
     for (icon, cmd, label) in QUICK {
-        let br = Rect::from_min_size(pos2(x, row.top() + 3.0), vec2(18.0, 18.0));
+        let br = Rect::from_min_size(pos2(x, row.top() + 2.0), vec2(16.0, 16.0));
         let resp = ui.interact(br, ui.id().with(("rb_quick", *cmd)), Sense::click());
         if resp.hovered() {
             p.rect_filled(br.expand(1.0), 2.0, t.control_hover.gamma_multiply(0.6));
@@ -347,11 +347,11 @@ fn tab_row(app: &mut CadApp, ui: &mut egui::Ui, row: Rect, action: &mut Option<A
         if resp.on_hover_text(*label).clicked() {
             *action = Some(Action::Start(cmd));
         }
-        x += 22.0;
+        x += 20.0;
     }
     x += 14.0;
     for tab in TABS {
-        let galley = p.layout_no_wrap(tab.title.to_string(), crate::theme::body(), t.text);
+        let galley = p.layout_no_wrap(tab.title.to_string(), ribbon_font(), t.text);
         let tr = Rect::from_min_size(pos2(x, row.top() + 2.0), vec2(galley.size().x + 18.0, row.height() - 2.0));
         let resp = ui.interact(tr, ui.id().with(("rb_tab", tab.id)), Sense::click());
         let active = app.ui.ribbon_tab == tab.id;
@@ -374,16 +374,21 @@ fn tab_row(app: &mut CadApp, ui: &mut egui::Ui, row: Rect, action: &mut Option<A
     let _ = action;
 }
 
+/// The ribbon's labels: smaller than the palettes' text, as in the reference program.
+fn ribbon_font() -> egui::FontId {
+    egui::FontId::proportional(11.0)
+}
+
 fn text_w(ui: &egui::Ui, s: &str) -> f32 {
-    s.lines().map(|l| ui.painter().layout_no_wrap(l.to_string(), crate::theme::small(), Color32::WHITE).size().x).fold(0.0, f32::max)
+    s.lines().map(|l| ui.painter().layout_no_wrap(l.to_string(), ribbon_font(), Color32::WHITE).size().x).fold(0.0, f32::max)
 }
 
 fn col_width(ui: &egui::Ui, col: &Col) -> f32 {
     match col {
-        Col::Big((_, _, label)) => (text_w(ui, label) + 10.0).max(44.0),
-        Col::Small(bs) => bs.iter().map(|b| text_w(ui, b.2)).fold(0.0, f32::max) + 30.0,
-        Col::Icons(_) => 28.0,
-        Col::Layer => 230.0,
+        Col::Big((_, _, label)) => (text_w(ui, label) + 8.0).max(38.0),
+        Col::Small(bs) => bs.iter().map(|b| text_w(ui, b.2)).fold(0.0, f32::max) + 26.0,
+        Col::Icons(_) => 24.0,
+        Col::Layer => 214.0,
         Col::Props => 170.0,
     }
 }
@@ -400,7 +405,7 @@ fn draw_panel(app: &mut CadApp, ui: &mut egui::Ui, panel: &Panel, pr: Rect, acti
     // Panel title bar, as in the reference program: name and a small arrow.
     let title = Rect::from_min_max(pos2(pr.left(), pr.bottom() - TITLE_H), pr.max);
     p.rect_filled(title.shrink2(vec2(1.0, 1.0)), 0.0, t.chrome_dark.gamma_multiply(0.55));
-    p.text(title.center() - vec2(5.0, 0.0), Align2::CENTER_CENTER, panel.title, crate::theme::small(), t.text_dim);
+    p.text(title.center() - vec2(5.0, 0.0), Align2::CENTER_CENTER, panel.title, ribbon_font(), t.text_dim);
     let tw = text_w(ui, panel.title);
     icons::paint(&p, Rect::from_center_size(pos2(title.center().x + tw / 2.0 + 3.0, title.center().y), vec2(8.0, 8.0)), Icon::ChevronDown, false);
 
@@ -418,7 +423,7 @@ fn draw_panel(app: &mut CadApp, ui: &mut egui::Ui, panel: &Panel, pr: Rect, acti
             }
             Col::Icons(bs) => {
                 for (i, (icon, cmd, label)) in bs.iter().enumerate() {
-                    let rr = Rect::from_min_size(pos2(cr.left(), cr.top() + i as f32 * ROW_H + 1.0), vec2(24.0, ROW_H - 2.0));
+                    let rr = Rect::from_min_size(pos2(cr.left(), cr.top() + i as f32 * ROW_H + 1.0), vec2(20.0, ROW_H - 2.0));
                     small_button(ui, rr, *icon, cmd, label, false, action);
                 }
             }
@@ -436,9 +441,9 @@ fn big_button(ui: &mut egui::Ui, r: Rect, icon: Icon, cmd: &'static str, label: 
     if resp.hovered() {
         p.rect_filled(resp.rect, 3.0, t.control_hover.gamma_multiply(0.6));
     }
-    icons::paint(p, Rect::from_center_size(pos2(r.center().x, r.top() + 18.0), vec2(28.0, 28.0)), icon, false);
+    icons::paint(p, Rect::from_center_size(pos2(r.center().x, r.top() + 14.0), vec2(24.0, 24.0)), icon, false);
     for (i, line) in label.lines().enumerate() {
-        p.text(pos2(r.center().x, r.top() + 38.0 + i as f32 * 13.0), Align2::CENTER_TOP, line, crate::theme::small(), t.text);
+        p.text(pos2(r.center().x, r.top() + 29.0 + i as f32 * 11.0), Align2::CENTER_TOP, line, ribbon_font(), t.text);
     }
     let tip = label.replace('\n', " ");
     icons::describe_control(ui, &resp, &tip, None, false);
@@ -454,9 +459,9 @@ fn small_button(ui: &mut egui::Ui, r: Rect, icon: Icon, cmd: &'static str, label
     if resp.hovered() {
         p.rect_filled(r, 2.0, t.control_hover.gamma_multiply(0.6));
     }
-    icons::paint(p, Rect::from_min_size(pos2(r.left() + 3.0, r.center().y - 8.0), vec2(16.0, 16.0)), icon, false);
+    icons::paint(p, Rect::from_min_size(pos2(r.left() + 2.0, r.center().y - 7.0), vec2(14.0, 14.0)), icon, false);
     if with_label {
-        p.text(pos2(r.left() + 24.0, r.center().y), Align2::LEFT_CENTER, label, crate::theme::small(), t.text);
+        p.text(pos2(r.left() + 20.0, r.center().y), Align2::LEFT_CENTER, label, ribbon_font(), t.text);
     }
     icons::describe_control(ui, &resp, label, None, false);
     if resp.on_hover_text(label).clicked() {
@@ -482,7 +487,7 @@ fn layer_column(app: &mut CadApp, ui: &mut egui::Ui, cr: Rect, action: &mut Opti
             x += 16.0;
         }
         crate::layers::swatch(&p, Rect::from_min_size(pos2(x + 2.0, combo.center().y - 5.0), vec2(10.0, 10.0)), *color);
-        p.text(pos2(x + 18.0, combo.center().y), Align2::LEFT_CENTER, name, crate::theme::small(), t.text);
+        p.text(pos2(x + 18.0, combo.center().y), Align2::LEFT_CENTER, name, ribbon_font(), t.text);
     }
     icons::paint(&p, Rect::from_center_size(pos2(combo.right() - 9.0, combo.center().y), vec2(10.0, 10.0)), Icon::ChevronDown, false);
     icons::describe_control(ui, &resp, "Layer corrente", None, false);
@@ -524,8 +529,8 @@ fn layer_column(app: &mut CadApp, ui: &mut egui::Ui, cr: Rect, action: &mut Opti
         let y = cr.top() + (i as f32 + 1.0) * ROW_H + 1.0;
         let mut x = cr.left();
         for (icon, cmd, label) in icons_row.iter() {
-            small_button(ui, Rect::from_min_size(pos2(x, y), vec2(22.0, ROW_H - 2.0)), *icon, cmd, label, false, action);
-            x += 22.0;
+            small_button(ui, Rect::from_min_size(pos2(x, y), vec2(19.0, ROW_H - 2.0)), *icon, cmd, label, false, action);
+            x += 19.0;
         }
         let (icon, cmd, label) = labelled;
         small_button(ui, Rect::from_min_size(pos2(x + 4.0, y), vec2(cr.right() - x - 10.0, ROW_H - 2.0)), *icon, cmd, label, true, action);
