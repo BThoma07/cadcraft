@@ -41,6 +41,8 @@ jobs:
           done
           # The failures as annotations, readable without logging in.
           grep -E -A3 "panicked at|^error(\[|:)|assertion|left:|right:|---- .* stdout ----" prove.log | grep -v "^--$" | head -80 | while IFS= read -r l; do echo "::error::$l"; done
+          # Nothing matched but something failed: the last lines tell why.
+          if [ $rc -ne 0 ]; then grep -v "^\s*$" prove.log | tail -25 | while IFS= read -r l; do echo "::warning::$l"; done; fi
           exit $rc
       - name: Tutte le altre prove (solo informative)
         continue-on-error: true
