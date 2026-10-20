@@ -1044,7 +1044,15 @@ pub(crate) fn properties_section(app: &mut CadApp, ui: &mut egui::Ui) {
     prop_group(ui, "3D Visualization");
     prop_row(ui, "Material", |ui| read_only(ui, "ByLayer"));
     if sel.len() == 1 {
-        prop_group(ui, "Geometry");
+        // The first category after General: Text for texts, Misc for dimensions, else Geometry.
+        prop_group(
+            ui,
+            match &e.kind {
+                EntityKind::Text(_) | EntityKind::MText(_) => "Text",
+                EntityKind::Dimension(_) => "Misc",
+                _ => "Geometry",
+            },
+        );
         let real = |v: f64| format!("{v:.4}");
         // Rotations show as the drawing measures directions (ANGBASE, ANGDIR).
         let angles = app.session.angle_settings();
@@ -1111,9 +1119,32 @@ pub(crate) fn properties_section(app: &mut CadApp, ui: &mut egui::Ui) {
                 }
             }
             EntityKind::Arc(a) => {
+                let (sx, sy) = (a.center.x + a.radius * a.start.cos(), a.center.y + a.radius * a.start.sin());
+                let (ex, ey) = (a.center.x + a.radius * a.end.cos(), a.center.y + a.radius * a.end.sin());
+                let mut sweep = a.end - a.start;
+                while sweep <= 0.0 {
+                    sweep += std::f64::consts::TAU;
+                }
+                prop_row(ui, "Start X", |ui| read_only(ui, &len(sx)));
+                prop_row(ui, "Start Y", |ui| read_only(ui, &len(sy)));
+                prop_row(ui, "Start Z", |ui| read_only(ui, &len(a.center.z)));
+                prop_row(ui, "Center X", |ui| read_only(ui, &len(a.center.x)));
+                prop_row(ui, "Center Y", |ui| read_only(ui, &len(a.center.y)));
+                prop_row(ui, "Center Z", |ui| read_only(ui, &len(a.center.z)));
+                prop_row(ui, "End X", |ui| read_only(ui, &len(ex)));
+                prop_row(ui, "End Y", |ui| read_only(ui, &len(ey)));
+                prop_row(ui, "End Z", |ui| read_only(ui, &len(a.center.z)));
                 num(ui, "Radius", "radius", len(a.radius), &mut set, &mut bad, &ids);
                 num(ui, "Start angle", "startAngle", real(a.start.to_degrees()), &mut set, &mut bad, &ids);
                 num(ui, "End angle", "endAngle", real(a.end.to_degrees()), &mut set, &mut bad, &ids);
+                prop_row(ui, "Total angle", |ui| read_only(ui, &real(sweep.to_degrees())));
+                prop_row(ui, "Arc length", |ui| read_only(ui, &len(a.radius * sweep)));
+                // The area between the arc and its chord, as the reference program shows it.
+                prop_row(ui, "Area", |ui| read_only(ui, &real(a.radius * a.radius * (sweep - sweep.sin()) / 2.0)));
+                let n = e.common.extrusion;
+                prop_row(ui, "Normal X", |ui| read_only(ui, &real(n.x)));
+                prop_row(ui, "Normal Y", |ui| read_only(ui, &real(n.y)));
+                prop_row(ui, "Normal Z", |ui| read_only(ui, &real(n.z)));
             }
             EntityKind::Text(tx) => {
                 prop_row(ui, "Contents", |ui| {
@@ -1121,9 +1152,26 @@ pub(crate) fn properties_section(app: &mut CadApp, ui: &mut egui::Ui) {
                         set = Some(json!({ "handles": ids, "text": s }));
                     }
                 });
+                prop_row(ui, "Style", |ui| read_only(ui, &tx.style));
+                prop_row(ui, "Annotative", |ui| read_only(ui, if e.common.anno_scales.is_empty() { "No" } else { "Yes" }));
+                let justify = match tx.halign {
+                    cadcraft_doc::HAlign::Left => "Left",
+                    cadcraft_doc::HAlign::Center => "Center",
+                    cadcraft_doc::HAlign::Right => "Right",
+                    _ => "Left",
+                };
+                prop_row(ui, "Justify", |ui| read_only(ui, justify));
                 num(ui, "Height", "height", len(tx.height), &mut set, &mut bad, &ids);
                 num(ui, "Rotation", "rotation", real(angles.shown(tx.rotation).to_degrees()), &mut set, &mut bad, &ids);
                 num(ui, "Width factor", "widthFactor", real(tx.width_factor), &mut set, &mut bad, &ids);
+                prop_row(ui, "Oblique angle", |ui| read_only(ui, &real(tx.oblique.to_degrees())));
+                prop_group(ui, "Geometry");
+                prop_row(ui, "Position X", |ui| read_only(ui, &len(tx.insert.x)));
+                prop_row(ui, "Position Y", |ui| read_only(ui, &len(tx.insert.y)));
+                prop_row(ui, "Position Z", |ui| read_only(ui, &len(tx.insert.z)));
+                prop_group(ui, "Misc");
+                prop_row(ui, "Upside down", |ui| read_only(ui, "No"));
+                prop_row(ui, "Backward", |ui| read_only(ui, "No"));
             }
             EntityKind::MText(tx) => {
                 prop_row(ui, "Contents", |ui| {
@@ -1135,12 +1183,19 @@ pub(crate) fn properties_section(app: &mut CadApp, ui: &mut egui::Ui) {
                 num(ui, "Defined width", "width", len(tx.width), &mut set, &mut bad, &ids);
             }
             EntityKind::LwPolyline(pl) => {
-                num(ui, "Global width", "width", len(pl.const_width), &mut set, &mut bad, &ids);
-                let g = cadcraft_geom::Polyline { vertices: pl.vertices.clone(), closed: pl.closed };
-                prop_row(ui, "Length", |ui| read_only(ui, &len(g.len())));
-                if pl.closed {
-                    prop_row(ui, "Area", |ui| read_only(ui, &format!("{:.4}", g.area().abs())));
+                if let Some(v) = pl.vertices.first() {
+                    prop_row(ui, "Current vertex", |ui| read_only(ui, "1"));
+                    prop_row(ui, "Vertex X", |ui| read_only(ui, &len(v.p.x)));
+                    prop_row(ui, "Vertex Y", |ui| read_only(ui, &len(v.p.y)));
+                    prop_row(ui, "Start segment width", |ui| read_only(ui, &len(v.start_width)));
+                    prop_row(ui, "End segment width", |ui| read_only(ui, &len(v.end_width)));
                 }
+                num(ui, "Global width", "width", len(pl.const_width), &mut set, &mut bad, &ids);
+                prop_row(ui, "Elevation", |ui| read_only(ui, &len(pl.elevation)));
+                let g = cadcraft_geom::Polyline { vertices: pl.vertices.clone(), closed: pl.closed };
+                prop_row(ui, "Area", |ui| read_only(ui, &format!("{:.4}", g.area().abs())));
+                prop_row(ui, "Length", |ui| read_only(ui, &len(g.len())));
+                prop_group(ui, "Misc");
                 prop_row(ui, "Closed", |ui| {
                     let mut c = pl.closed;
                     let label = if c { "Yes" } else { "No" };
@@ -1148,6 +1203,7 @@ pub(crate) fn properties_section(app: &mut CadApp, ui: &mut egui::Ui) {
                         set = Some(json!({ "handles": ids, "closed": c }));
                     }
                 });
+                prop_row(ui, "Linetype generation", |ui| read_only(ui, if pl.plinegen { "Enabled" } else { "Disabled" }));
             }
             EntityKind::Hatch(hh) => {
                 prop_row(ui, "Pattern", |ui| {
@@ -1162,22 +1218,29 @@ pub(crate) fn properties_section(app: &mut CadApp, ui: &mut egui::Ui) {
                 num(ui, "Angle", "angle", real(hh.angle.to_degrees()), &mut set, &mut bad, &ids);
             }
             EntityKind::Dimension(dm) => {
-                prop_row(ui, "Text override", |ui| {
-                    if let Some(s) = edit_field(ui, ui.id().with(("dimtxt", &ids)), dm.text.clone()) {
-                        set = Some(json!({ "handles": ids, "textOverride": s }));
-                    }
-                });
                 prop_row(ui, "Dim style", |ui| {
                     if let Some(n) = pick_menu(ui, &dm.style, d.dim_styles.iter().map(|st| st.name.clone())) {
                         set = Some(json!({ "handles": ids, "dimStyle": n }));
                     }
                 });
+                prop_row(ui, "Annotative", |ui| read_only(ui, if e.common.anno_scales.is_empty() { "No" } else { "Yes" }));
                 // The style's values with this dimension's own overrides; editing one overrides
                 // it for the selected dimensions, as AutoCAD's Properties palette does.
                 let st = d.dim_style(&dm.style).cloned().unwrap_or_default().with_overrides(&dm.overrides);
-                num(ui, "Text height", "textHeight", len(st.text_height), &mut set, &mut bad, &ids);
+                prop_group(ui, "Lines & Arrows");
                 num(ui, "Arrow size", "arrowSize", len(st.arrow_size), &mut set, &mut bad, &ids);
+                prop_group(ui, "Text");
+                num(ui, "Text height", "textHeight", len(st.text_height), &mut set, &mut bad, &ids);
+                prop_row(ui, "Text rotation", |ui| read_only(ui, &real(dm.text_rotation.to_degrees())));
+                prop_row(ui, "Measurement", |ui| read_only(ui, &len(dm.measurement)));
+                prop_row(ui, "Text override (local)", |ui| {
+                    if let Some(s) = edit_field(ui, ui.id().with(("dimtxt", &ids)), dm.text.clone()) {
+                        set = Some(json!({ "handles": ids, "textOverride": s }));
+                    }
+                });
+                prop_group(ui, "Fit");
                 num(ui, "Dim scale overall", "dimScale", real(st.scale), &mut set, &mut bad, &ids);
+                prop_group(ui, "Primary Units");
                 prop_row(ui, "Precision", |ui| {
                     let cur = st.decimals.to_string();
                     if let Some(n) = pick_menu(ui, &cur, (0..=8).map(|n: u8| n.to_string())).and_then(|n| n.parse::<u8>().ok()) {
