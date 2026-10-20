@@ -511,7 +511,53 @@ pub fn tree(app: &CadApp) -> Vec<(String, Vec<Entry>)> {
         let at = file.iter().position(|e| matches!(e, Entry::Item { id, .. } if id == "open")).map_or(0, |i| i + 1);
         file.insert(at, Entry::Sub { label: OPEN_RECENT.into(), children: recent_entries(app) });
     }
+    if app.ui.autocad_edition {
+        autocad_menus(app, &mut out);
+    }
     out
+}
+
+/// The Italian edition's extra menus, where the reference program has them: Parametrico after
+/// Edita, Express after "?".
+fn autocad_menus(app: &CadApp, out: &mut Vec<(String, Vec<Entry>)>) {
+    let item = |id: &str, label: &str| Entry::Item {
+        label: label.to_string(),
+        id: id.to_string(),
+        shortcut: None,
+        enabled: id.starts_with("ui.") || cadcraft_engine::cmd::find_command(id).is_some_and(|c| (c.enabled)(&app.session).is_ok()),
+    };
+    let parametric = vec![
+        Entry::Sub {
+            label: "Vincoli geometrici".into(),
+            children: vec![item("geomconstraint", "Coincidente, Parallelo, Perpendicolare…"), item("autoconstrain", "Vincolo automatico"), item("constraintinfer", "Deduci vincoli")],
+        },
+        Entry::Sub {
+            label: "Vincoli dimensionali".into(),
+            children: vec![item("dimconstraint", "Vincolo dimensionale"), item("dclinear", "Lineare")],
+        },
+        item("constraintbar.showall", "Mostra tutti i vincoli geometrici"),
+        item("constraintbar.hideall", "Nascondi tutti i vincoli geometrici"),
+        item("dcdisplay.showall", "Mostra tutti i vincoli dimensionali"),
+        item("dcdisplay.hideall", "Nascondi tutti i vincoli dimensionali"),
+        item("delconstraint", "Elimina vincoli"),
+        item("ui.dialog.parameters", "Gestione parametri"),
+        item("constraintsettings", "Impostazioni vincoli"),
+    ];
+    let express = vec![
+        Entry::Sub {
+            label: "Layer".into(),
+            children: vec![item("layiso", "Isola layer"), item("layuniso", "Rimuovi isolamento layer"), item("laymrg", "Unisci layer"), item("laydel", "Elimina layer")],
+        },
+        Entry::Sub {
+            label: "Blocchi".into(),
+            children: vec![item("burst", "Esplodi mantenendo attributi"), item("ncopy", "Copia oggetti nidificati"), item("count", "Conteggio blocchi")],
+        },
+        Entry::Sub { label: "Testo".into(), children: vec![item("txt2mtxt", "Converti testo in testo multilinea"), item("texttofront.all", "Porta testo in primo piano")] },
+        Entry::Sub { label: "Modifica".into(), children: vec![item("overkill", "Elimina oggetti duplicati"), item("breakline", "Simbolo linea di interruzione")] },
+    ];
+    let at = out.iter().position(|(m, _)| m == "Modify").map_or(out.len(), |i| i + 1);
+    out.insert(at, ("Parametrico".to_string(), parametric));
+    out.push(("Express".to_string(), express));
 }
 
 /// The items of File ▸ Open Recent: the recent files by name, newest first, then Clear Recent Files.

@@ -236,14 +236,61 @@ const OUTPUT: &[Panel] = &[
     Panel { title: "Esporta in DWF/PDF", cols: &[Col::Big((Icon::Export, "exportpdf", "Esporta\nPDF")), Col::Small(&[(Icon::Export, "export", "Esporta"), (Icon::Publish, "pdfbook", "Fascicolo PDF")])] },
 ];
 
+const TOOLS3D: &[Panel] = &[
+    Panel {
+        title: "Navigazione",
+        cols: &[Col::Big((Icon::Orbit, "3dorbit", "Orbita")), Col::Small(&[(Icon::Pan, "pan", "Pan"), (Icon::ZoomExtents, "zoom.extents", "Estensioni"), (Icon::ZoomWindow, "zoom.window", "Finestra")])],
+    },
+    Panel { title: "Finestre", cols: &[Col::Small(&[(Icon::Workspace, "vports.1", "Una finestra"), (Icon::Workspace, "vports.2", "Due finestre"), (Icon::Workspace, "vports.4", "Quattro finestre")])] },
+];
+
+const RENDER: &[Panel] = &[
+    Panel { title: "Visualizzazione", cols: &[Col::Big((Icon::Redo, "regenall", "Rigenera\ntutto")), Col::Small(&[(Icon::Redo, "regen", "Rigenera"), (Icon::Preview, "redraw", "Ridisegna")])] },
+    Panel { title: "Ordine", cols: &[Col::Small(&[(Icon::Layers, "draworder.front", "Porta in primo piano"), (Icon::Layers, "draworder.back", "Porta in fondo"), (Icon::Text, "texttofront", "Testo in primo piano")])] },
+];
+
+const ADDINS: &[Panel] = &[Panel {
+    title: "Applicazioni",
+    cols: &[Col::Big((Icon::Import, "appload", "Carica\napplicazione")), Col::Small(&[(Icon::List, "script", "Esegui script"), (Icon::Text, "lisp", "LISP")])],
+}];
+
+const COLLABORATE: &[Panel] = &[
+    Panel { title: "Confronto", cols: &[Col::Big((Icon::Switcher, "compare", "Confronto\nDWG"))] },
+    Panel { title: "Condividi", cols: &[Col::Big((Icon::Share, "share", "Condividi")), Col::Small(&[(Icon::Attach, "xref", "Riferimenti esterni"), (Icon::Publish, "publish", "Pubblica")])] },
+];
+
+const AUTOMATION: &[Panel] = &[Panel {
+    title: "Automazione",
+    cols: &[Col::Big((Icon::List, "script", "Esegui\nscript")), Col::Small(&[(Icon::Import, "appload", "Carica applicazione"), (Icon::Gear, "aliasedit", "Modifica alias"), (Icon::Redo, "reinit", "Reinizializza")])],
+}];
+
+const EXPRESS: &[Panel] = &[
+    Panel { title: "Blocchi", cols: &[Col::Small(&[(Icon::Explode, "burst", "Esplodi con attributi"), (Icon::Copy, "ncopy", "Copia nidificati"), (Icon::Blocks, "count", "Conteggio")])] },
+    Panel { title: "Testo", cols: &[Col::Small(&[(Icon::MText, "txt2mtxt", "Converti in testo multilinea"), (Icon::Text, "texttofront.all", "Testo in primo piano")])] },
+    Panel { title: "Modifica", cols: &[Col::Small(&[(Icon::Erase, "overkill", "Elimina duplicati"), (Icon::Break, "breakline", "Linea di interruzione")])] },
+    Panel {
+        title: "Layer",
+        cols: &[Col::Small(&[(Icon::LayerIso, "layiso", "Isola layer"), (Icon::LayerPrev, "layuniso", "Rimuovi isolamento"), (Icon::Join, "laymrg", "Unisci layer")]), Col::Small(&[(Icon::Erase, "laydel", "Elimina layer"), (Icon::LayerMatch, "laymch", "Corrispondenza layer")])],
+    },
+];
+
+const APPS: &[Panel] = &[Panel { title: "Applicazioni", cols: &[Col::Big((Icon::Import, "appload", "Carica\napplicazione"))] }];
+
 const TABS: &[Tab] = &[
     Tab { id: "home", title: "Inizio", panels: HOME },
     Tab { id: "insert", title: "Inserisci", panels: INSERT },
     Tab { id: "annotate", title: "Annota", panels: ANNOTATE },
     Tab { id: "parametric", title: "Parametrico", panels: PARAMETRIC },
+    Tab { id: "tools3d", title: "Strumenti 3D", panels: TOOLS3D },
+    Tab { id: "render", title: "Visualizza", panels: RENDER },
     Tab { id: "view", title: "Vista", panels: VIEW },
     Tab { id: "manage", title: "Gestisci", panels: MANAGE },
     Tab { id: "output", title: "Output", panels: OUTPUT },
+    Tab { id: "addins", title: "Moduli aggiuntivi", panels: ADDINS },
+    Tab { id: "collaborate", title: "Collabora", panels: COLLABORATE },
+    Tab { id: "automation", title: "Automazione", panels: AUTOMATION },
+    Tab { id: "express", title: "Express Tools", panels: EXPRESS },
+    Tab { id: "apps", title: "Applicazioni disponibili", panels: APPS },
 ];
 
 /// The quick access tools at the start of the tab row.

@@ -7,6 +7,8 @@
 # Menu headings that differ from the object/command label (Italian desktop CAD convention).
 menu	View	Visualizza
 menu	Modify	Edita
+menu	Dimension	Quotatura
+menu	Help	?
 # External References palette.
 	Apply	Applica
 	Attach DWG...	Associa DWG...
