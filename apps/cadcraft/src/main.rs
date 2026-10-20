@@ -258,7 +258,9 @@ fn main() -> eframe::Result {
         }
     }
     install_io();
-    let surface = cadcraft_ui_egui::gpu::surface_config(std::env::var("CADCRAFT_VSYNC").ok().as_deref(), cfg!(all(unix, not(target_os = "macos"))));
+    // Italian edition: the low-latency present mode on Windows too, so the crosshair follows the
+    // mouse as closely as in the reference program (`CADCRAFT_VSYNC=1` restores vsync).
+    let surface = cadcraft_ui_egui::gpu::surface_config(std::env::var("CADCRAFT_VSYNC").ok().as_deref(), cfg!(not(target_os = "macos")));
     let mut options = eframe::NativeOptions {
         // The crosshair is drawn by the app: present without a queue on Linux/BSD, where X11
         // swapchains hold two frames back under vsync (`CADCRAFT_VSYNC=1` restores vsync).

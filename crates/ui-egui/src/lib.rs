@@ -432,32 +432,37 @@ impl CadApp {
     /// Italian interface, menu bar and ribbon instead of the Tool Bar and Tool Sets, Properties
     /// on the right, black model space. Applied once; the user's later changes are kept.
     pub fn apply_autocad_edition(&mut self) {
-        // Revision 2: a larger interface, as the reference program's (its controls are bigger).
-        const REV: u32 = 2;
-        if self.ui.autocad_edition && self.ui.autocad_edition_rev >= REV {
+        // Each revision applies its changes once, also to installations made with an earlier one.
+        // 1: layout, language, ribbon, colours. 2: a larger interface (the reference program's
+        // controls are bigger). 3: no fades or smoothed scrolling: menus and palettes appear at
+        // once, as in the reference program.
+        const REV: u32 = 3;
+        let rev = if self.ui.autocad_edition { self.ui.autocad_edition_rev.max(1) } else { 0 };
+        if rev >= REV {
             return;
         }
-        let first = !self.ui.autocad_edition;
-        self.ui.autocad_edition = true;
-        self.ui.autocad_edition_rev = REV;
-        if (self.options.interface_scale - 1.0).abs() < 0.01 {
+        if rev < 1 {
+            self.ui.interface_language = i18n::Preference::Italian;
+            self.ui.show_ribbon = true;
+            self.ui.ribbon_tab = "home".into();
+            self.ui.show_toolbar = false;
+            self.ui.show_toolsets = false;
+            self.ui.show_palettes = true;
+            self.ui.in_window_menu = !cfg!(target_os = "macos");
+            self.ui.theme = theme::ThemePref::Dark;
+            self.ui.docking = docking::Workspace::autocad();
+            if self.options.model_background.is_none() {
+                self.options.model_background = Some(egui::Color32::BLACK);
+            }
+        }
+        if rev < 2 && (self.options.interface_scale - 1.0).abs() < 0.01 {
             self.options.interface_scale = 1.25;
         }
-        if !first {
-            return;
+        if rev < 3 {
+            self.ui.animations = animation::AnimationPref::Off;
         }
-        self.ui.interface_language = i18n::Preference::Italian;
-        self.ui.show_ribbon = true;
-        self.ui.ribbon_tab = "home".into();
-        self.ui.show_toolbar = false;
-        self.ui.show_toolsets = false;
-        self.ui.show_palettes = true;
-        self.ui.in_window_menu = !cfg!(target_os = "macos");
-        self.ui.theme = theme::ThemePref::Dark;
-        self.ui.docking = docking::Workspace::autocad();
-        if self.options.model_background.is_none() {
-            self.options.model_background = Some(egui::Color32::BLACK);
-        }
+        self.ui.autocad_edition = true;
+        self.ui.autocad_edition_rev = REV;
     }
 
     pub fn set_status(&mut self, s: impl Into<String>) {
