@@ -259,10 +259,10 @@ const QUICK: &[Btn] = &[
     (Icon::Redo, "redo", "Ripristina"),
 ];
 
-const TAB_H: f32 = 20.0;
-const BODY_H: f32 = 58.0;
-const TITLE_H: f32 = 15.0;
-const ROW_H: f32 = 18.0;
+const TAB_H: f32 = 24.0;
+const BODY_H: f32 = 66.0;
+const TITLE_H: f32 = 17.0;
+const ROW_H: f32 = 21.0;
 const PAD: f32 = 6.0;
 
 /// Every command a ribbon button starts, for the test that they all exist.
@@ -376,7 +376,7 @@ fn tab_row(app: &mut CadApp, ui: &mut egui::Ui, row: Rect, action: &mut Option<A
 
 /// The ribbon's labels: smaller than the palettes' text, as in the reference program.
 fn ribbon_font() -> egui::FontId {
-    egui::FontId::proportional(11.0)
+    egui::FontId::proportional(12.0)
 }
 
 fn text_w(ui: &egui::Ui, s: &str) -> f32 {
@@ -441,9 +441,9 @@ fn big_button(ui: &mut egui::Ui, r: Rect, icon: Icon, cmd: &'static str, label: 
     if resp.hovered() {
         p.rect_filled(resp.rect, 3.0, t.control_hover.gamma_multiply(0.6));
     }
-    icons::paint(p, Rect::from_center_size(pos2(r.center().x, r.top() + 14.0), vec2(24.0, 24.0)), icon, false);
+    icons::paint(p, Rect::from_center_size(pos2(r.center().x, r.top() + 16.0), vec2(28.0, 28.0)), icon, false);
     for (i, line) in label.lines().enumerate() {
-        p.text(pos2(r.center().x, r.top() + 29.0 + i as f32 * 11.0), Align2::CENTER_TOP, line, ribbon_font(), t.text);
+        p.text(pos2(r.center().x, r.top() + 33.0 + i as f32 * 13.0), Align2::CENTER_TOP, line, ribbon_font(), t.text);
     }
     let tip = label.replace('\n', " ");
     icons::describe_control(ui, &resp, &tip, None, false);
@@ -459,9 +459,9 @@ fn small_button(ui: &mut egui::Ui, r: Rect, icon: Icon, cmd: &'static str, label
     if resp.hovered() {
         p.rect_filled(r, 2.0, t.control_hover.gamma_multiply(0.6));
     }
-    icons::paint(p, Rect::from_min_size(pos2(r.left() + 2.0, r.center().y - 7.0), vec2(14.0, 14.0)), icon, false);
+    icons::paint(p, Rect::from_min_size(pos2(r.left() + 2.0, r.center().y - 7.0), vec2(16.0, 16.0)), icon, false);
     if with_label {
-        p.text(pos2(r.left() + 20.0, r.center().y), Align2::LEFT_CENTER, label, ribbon_font(), t.text);
+        p.text(pos2(r.left() + 22.0, r.center().y), Align2::LEFT_CENTER, label, ribbon_font(), t.text);
     }
     icons::describe_control(ui, &resp, label, None, false);
     if resp.on_hover_text(label).clicked() {

@@ -83,6 +83,8 @@ pub struct UiState {
     pub ribbon_minimized: bool,
     /// The Italian AutoCAD-style setup ([`CadApp::apply_autocad_edition`]) was applied once.
     pub autocad_edition: bool,
+    /// Which revision of that setup was applied (new revisions apply their changes once).
+    pub autocad_edition_rev: u32,
     pub show_file_tabs: bool,
     pub show_status_bar: bool,
     pub show_command_line: bool,
@@ -173,6 +175,7 @@ impl Default for UiState {
             ribbon_tab: "home".into(),
             ribbon_minimized: false,
             autocad_edition: false,
+            autocad_edition_rev: 0,
             show_file_tabs: true,
             show_status_bar: true,
             show_command_line: true,
@@ -429,10 +432,20 @@ impl CadApp {
     /// Italian interface, menu bar and ribbon instead of the Tool Bar and Tool Sets, Properties
     /// on the right, black model space. Applied once; the user's later changes are kept.
     pub fn apply_autocad_edition(&mut self) {
-        if self.ui.autocad_edition {
+        // Revision 2: a larger interface, as the reference program's (its controls are bigger).
+        const REV: u32 = 2;
+        if self.ui.autocad_edition && self.ui.autocad_edition_rev >= REV {
             return;
         }
+        let first = !self.ui.autocad_edition;
         self.ui.autocad_edition = true;
+        self.ui.autocad_edition_rev = REV;
+        if (self.options.interface_scale - 1.0).abs() < 0.01 {
+            self.options.interface_scale = 1.25;
+        }
+        if !first {
+            return;
+        }
         self.ui.interface_language = i18n::Preference::Italian;
         self.ui.show_ribbon = true;
         self.ui.ribbon_tab = "home".into();
