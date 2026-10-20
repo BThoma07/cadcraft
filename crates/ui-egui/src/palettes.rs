@@ -546,6 +546,17 @@ fn prop_row(ui: &mut egui::Ui, label: &str, add: impl FnOnce(&mut egui::Ui)) {
         }
         ui.add_space(2.0);
         ui.set_min_height(PROP_ROW_H);
+        // Values read as plain text, as in the reference program: no button boxes, a tint only
+        // while pointed at.
+        let v = ui.visuals_mut();
+        for w in [&mut v.widgets.inactive, &mut v.widgets.noninteractive] {
+            w.bg_fill = Color32::TRANSPARENT;
+            w.weak_bg_fill = Color32::TRANSPARENT;
+            w.bg_stroke = Stroke::NONE;
+        }
+        v.widgets.hovered.bg_stroke = Stroke::NONE;
+        v.widgets.active.bg_stroke = Stroke::NONE;
+        ui.spacing_mut().button_padding = vec2(4.0, 1.0);
         add(ui);
     });
     let bottom = ui.cursor().top().max(top + PROP_ROW_H);

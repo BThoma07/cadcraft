@@ -50,7 +50,6 @@ const HOME: &[Panel] = &[
             Col::Big((Icon::Circle, "circle", "Cerchio")),
             Col::Big((Icon::Arc, "arc", "Arco")),
             Col::Icons(&[(Icon::Rectangle, "rectang", "Rettangolo"), (Icon::Ellipse, "ellipse", "Ellisse"), (Icon::Hatch, "hatch", "Tratteggio")]),
-            Col::Icons(&[(Icon::Polygon, "polygon", "Poligono"), (Icon::Spline, "spline", "Spline"), (Icon::XLine, "xline", "Linea di costruzione")]),
         ],
     },
     Panel {
@@ -60,7 +59,6 @@ const HOME: &[Panel] = &[
             Col::Small(&[(Icon::Rotate, "rotate", "Ruota"), (Icon::Mirror, "mirror", "Specchio"), (Icon::Scale, "scale", "Scala")]),
             Col::Small(&[(Icon::Trim, "trim", "Taglia"), (Icon::Fillet, "fillet", "Raccordo"), (Icon::ArrayRect, "arrayrect", "Serie")]),
             Col::Icons(&[(Icon::Erase, "erase", "Cancella"), (Icon::Explode, "explode", "Esplodi"), (Icon::Offset, "offset", "Offset")]),
-            Col::Icons(&[(Icon::Extend, "extend", "Estendi"), (Icon::Join, "join", "Unisci"), (Icon::Break, "break", "Spezza")]),
         ],
     },
     Panel {
@@ -91,14 +89,14 @@ const HOME: &[Panel] = &[
         title: "Utilità",
         cols: &[
             Col::Big((Icon::Measure, "measuregeom", "Misura")),
-            Col::Icons(&[(Icon::Distance, "dist", "Distanza"), (Icon::Area, "area", "Area"), (Icon::List, "list", "Lista")]),
+            Col::Icons(&[(Icon::QuickSelect, "qselect", "Selezione rapida"), (Icon::SelectObjects, "selectall", "Seleziona tutto"), (Icon::List, "cal", "Calcolatrice")]),
         ],
     },
     Panel {
         title: "Appunti",
         cols: &[
             Col::Big((Icon::Insert, "pasteclip", "Incolla")),
-            Col::Icons(&[(Icon::Copy, "copyclip", "Copia negli Appunti"), (Icon::Erase, "cutclip", "Taglia negli Appunti"), (Icon::Move, "copybase", "Copia con punto base")]),
+            Col::Icons(&[(Icon::Copy, "copyclip", "Copia negli Appunti"), (Icon::Erase, "cutclip", "Taglia negli Appunti")]),
         ],
     },
     Panel {
@@ -259,6 +257,150 @@ const QUICK: &[Btn] = &[
     (Icon::Redo, "redo", "Ripristina"),
 ];
 
+/// What opens under a button's small arrow, as on the reference program's split buttons.
+const VARIANTS: &[(&str, &[Btn])] = &[
+    (
+        "circle",
+        &[
+            (Icon::Circle, "circle", "Centro, Raggio"),
+            (Icon::Circle, "circle.cd", "Centro, Diametro"),
+            (Icon::Circle, "circle.2p", "2 punti"),
+            (Icon::Circle, "circle.3p", "3 punti"),
+            (Icon::Circle, "circle.ttr", "Tan, Tan, Raggio"),
+            (Icon::Circle, "circle.ttt", "Tan, Tan, Tan"),
+        ],
+    ),
+    (
+        "arc",
+        &[
+            (Icon::Arc, "arc", "3 punti"),
+            (Icon::Arc, "arc.sce", "Inizio, Centro, Fine"),
+            (Icon::Arc, "arc.sca", "Inizio, Centro, Angolo"),
+            (Icon::Arc, "arc.scl", "Inizio, Centro, Lunghezza"),
+            (Icon::Arc, "arc.sea", "Inizio, Fine, Angolo"),
+            (Icon::Arc, "arc.sed", "Inizio, Fine, Direzione"),
+            (Icon::Arc, "arc.ser", "Inizio, Fine, Raggio"),
+            (Icon::Arc, "arc.cse", "Centro, Inizio, Fine"),
+            (Icon::Arc, "arc.csa", "Centro, Inizio, Angolo"),
+            (Icon::Arc, "arc.csl", "Centro, Inizio, Lunghezza"),
+            (Icon::Arc, "arc.continue", "Continua"),
+        ],
+    ),
+    ("rectang", &[(Icon::Rectangle, "rectang", "Rettangolo"), (Icon::Polygon, "polygon", "Poligono")]),
+    ("ellipse", &[(Icon::Ellipse, "ellipse", "Centro"), (Icon::Ellipse, "ellipse.axis", "Asse, Fine"), (Icon::Ellipse, "ellipse.arc", "Arco ellittico")]),
+    ("hatch", &[(Icon::Hatch, "hatch", "Tratteggio"), (Icon::Gradient, "gradient", "Sfumatura"), (Icon::Boundary, "boundary", "Contorno")]),
+    ("trim", &[(Icon::Trim, "trim", "Taglia"), (Icon::Extend, "extend", "Estendi")]),
+    ("fillet", &[(Icon::Fillet, "fillet", "Raccordo"), (Icon::Chamfer, "chamfer", "Cima"), (Icon::Spline, "blend", "Raccorda curve")]),
+    ("arrayrect", &[(Icon::ArrayRect, "arrayrect", "Serie rettangolare"), (Icon::Spline, "arraypath", "Serie lungo percorso"), (Icon::ArrayPolar, "arraypolar", "Serie polare")]),
+    ("mtext", &[(Icon::MText, "mtext", "Testo multilinea"), (Icon::Text, "text", "Testo su riga singola")]),
+    (
+        "dimlinear",
+        &[
+            (Icon::DimLinear, "dimlinear", "Lineare"),
+            (Icon::DimAligned, "dimaligned", "Allineata"),
+            (Icon::DimAngular, "dimangular", "Angolare"),
+            (Icon::DimArc, "dimarc", "Lunghezza arco"),
+            (Icon::DimRadius, "dimradius", "Raggio"),
+            (Icon::DimDiameter, "dimdiameter", "Diametro"),
+            (Icon::DimRadius, "dimjogged", "Con raccordo"),
+            (Icon::DimOrdinate, "dimordinate", "Coordinata"),
+        ],
+    ),
+    (
+        "mleader",
+        &[
+            (Icon::MLeader, "mleader", "Multidirettrice"),
+            (Icon::AddLeader, "mleaderedit.add", "Aggiungi direttrice"),
+            (Icon::RemoveLeader, "mleaderedit.remove", "Rimuovi direttrice"),
+            (Icon::AlignLeaders, "mleaderalign", "Allinea"),
+            (Icon::MLeader, "mleadercollect", "Raccogli"),
+        ],
+    ),
+    ("insert", &[(Icon::Insert, "insert", "Inserisci blocco"), (Icon::Blocks, "ui.dialog.blocks", "Blocchi recenti e preferiti")]),
+    ("attedit", &[(Icon::AttDef, "attedit", "Singolo"), (Icon::AttDef, "-attedit", "Multiplo")]),
+    (
+        "measuregeom",
+        &[
+            (Icon::Measure, "measuregeom", "Rapida"),
+            (Icon::Distance, "dist", "Distanza"),
+            (Icon::DimRadius, "radius.measure", "Raggio"),
+            (Icon::DimAngular, "angle.measure", "Angolo"),
+            (Icon::Area, "area", "Area"),
+        ],
+    ),
+    ("pasteclip", &[(Icon::Insert, "pasteclip", "Incolla"), (Icon::Blocks, "pasteblock", "Incolla come blocco"), (Icon::Insert, "pasteorig", "Incolla alle coordinate originali")]),
+    ("copyclip", &[(Icon::Copy, "copyclip", "Copia negli Appunti"), (Icon::Move, "copybase", "Copia con punto base")]),
+];
+
+/// The tools a panel shows when its title is clicked (the panel's slide-out).
+const EXTRA: &[(&str, &[Btn])] = &[
+    (
+        "Disegna",
+        &[
+            (Icon::Spline, "spline", "Spline adattata"),
+            (Icon::Spline, "spline.cv", "Spline con vertici di controllo"),
+            (Icon::XLine, "xline", "Linea di costruzione"),
+            (Icon::Ray, "ray", "Raggio"),
+            (Icon::Point, "point.multiple", "Punti multipli"),
+            (Icon::Point, "divide", "Dividi"),
+            (Icon::Point, "measure", "Misura"),
+            (Icon::Region, "region", "Regione"),
+            (Icon::Wipeout, "wipeout", "Copertura"),
+            (Icon::RevCloud, "revcloud", "Nuvola di revisione"),
+            (Icon::Spline, "helix", "Elica"),
+            (Icon::Donut, "donut", "Anello"),
+            (Icon::Polyline, "3dpoly", "Polilinea 3D"),
+            (Icon::Polygon, "polygon", "Poligono"),
+        ],
+    ),
+    (
+        "Edita",
+        &[
+            (Icon::Break, "breakatpoint", "Spezza nel punto"),
+            (Icon::Break, "break", "Spezza"),
+            (Icon::Join, "join", "Unisci"),
+            (Icon::Lengthen, "lengthen", "Allunga"),
+            (Icon::Move, "align", "Allinea"),
+            (Icon::Rotate, "reverse", "Inverti"),
+            (Icon::Polyline, "pedit", "Modifica polilinea"),
+            (Icon::Spline, "splinedit", "Modifica spline"),
+            (Icon::Layers, "draworder", "Ordine di visualizzazione"),
+            (Icon::Erase, "overkill", "Elimina oggetti duplicati"),
+            (Icon::Hatch, "hatchedit", "Modifica tratteggio"),
+        ],
+    ),
+    (
+        "Annotazione",
+        &[(Icon::Text, "style", "Stile di testo"), (Icon::Gear, "dimstyle", "Stile di quota"), (Icon::MLeader, "mleaderstyle", "Stile multidirettrice"), (Icon::Table, "tablestyle", "Stile tabella")],
+    ),
+    (
+        "Layer",
+        &[
+            (Icon::Layers, "layerstate.list", "Stati layer"),
+            (Icon::Bulb, "layon", "Attiva tutti i layer"),
+            (Icon::Sun, "laythw", "Scongela tutti i layer"),
+            (Icon::LayerPrev, "layerp", "Layer precedente"),
+            (Icon::Join, "laymrg", "Unisci layer"),
+            (Icon::Erase, "laydel", "Elimina layer"),
+            (Icon::LayerLock, "laylck", "Blocca layer"),
+            (Icon::Unlock, "layulk", "Sblocca layer"),
+        ],
+    ),
+    ("Blocco", &[(Icon::AttDef, "attdef", "Definisci attributi"), (Icon::List, "battman", "Gestione attributi"), (Icon::Redo, "attsync", "Sincronizza attributi"), (Icon::Save, "wblock", "Scrivi blocco")]),
+    ("Proprietà", &[(Icon::Transparency, "transparencydisplay", "Trasparenza"), (Icon::List, "list", "Lista"), (Icon::Lineweight, "lwdisplay", "Visualizza spessori di linea")]),
+    ("Gruppi", &[(Icon::SelectObjects, "groupedit", "Modifica gruppo"), (Icon::PickAdd, "pickstyle", "Selezione gruppi")]),
+    ("Utilità", &[(Icon::Point, "id", "Coordinate punto"), (Icon::Distance, "dist", "Distanza"), (Icon::Area, "area", "Area"), (Icon::List, "list", "Lista")]),
+    ("Vista", &[(Icon::ZoomWindow, "zoom.window", "Zoom finestra"), (Icon::ZoomExtents, "zoom.all", "Zoom tutto"), (Icon::LayerPrev, "zoom.previous", "Zoom precedente"), (Icon::Workspace, "vports", "Finestre")]),
+];
+
+fn variants(cmd: &str) -> Option<&'static [Btn]> {
+    VARIANTS.iter().find(|(c, _)| *c == cmd).map(|(_, v)| *v)
+}
+
+fn extra(title: &str) -> Option<&'static [Btn]> {
+    EXTRA.iter().find(|(t, _)| *t == title).map(|(_, v)| *v)
+}
+
 const TAB_H: f32 = 24.0;
 const BODY_H: f32 = 66.0;
 const TITLE_H: f32 = 17.0;
@@ -278,6 +420,9 @@ pub fn commands() -> Vec<&'static str> {
                 }
             }
         }
+    }
+    for (_, list) in VARIANTS.iter().chain(EXTRA) {
+        v.extend(list.iter().map(|b| b.1));
     }
     v
 }
@@ -386,8 +531,14 @@ fn text_w(ui: &egui::Ui, s: &str) -> f32 {
 fn col_width(ui: &egui::Ui, col: &Col) -> f32 {
     match col {
         Col::Big((_, _, label)) => (text_w(ui, label) + 8.0).max(38.0),
-        Col::Small(bs) => bs.iter().map(|b| text_w(ui, b.2)).fold(0.0, f32::max) + 26.0,
-        Col::Icons(_) => 24.0,
+        Col::Small(bs) => bs.iter().map(|b| text_w(ui, b.2) + if variants(b.1).is_some() { 14.0 } else { 0.0 }).fold(0.0, f32::max) + 26.0,
+        Col::Icons(bs) => {
+            if bs.iter().any(|b| variants(b.1).is_some()) {
+                34.0
+            } else {
+                24.0
+            }
+        }
         Col::Layer => 214.0,
         Col::Props => 170.0,
     }
@@ -408,6 +559,13 @@ fn draw_panel(app: &mut CadApp, ui: &mut egui::Ui, panel: &Panel, pr: Rect, acti
     p.text(title.center() - vec2(5.0, 0.0), Align2::CENTER_CENTER, panel.title, ribbon_font(), t.text_dim);
     let tw = text_w(ui, panel.title);
     icons::paint(&p, Rect::from_center_size(pos2(title.center().x + tw / 2.0 + 3.0, title.center().y), vec2(8.0, 8.0)), Icon::ChevronDown, false);
+    if let Some(list) = extra(panel.title) {
+        let tresp = ui.interact(title, ui.id().with(("rb_panel_more", panel.title)), Sense::click());
+        if tresp.hovered() {
+            p.rect_filled(title.shrink2(vec2(1.0, 1.0)), 0.0, t.control_hover.gamma_multiply(0.35));
+        }
+        slide_out(ui, &tresp, list, action);
+    }
 
     let mut x = content.left();
     for col in panel.cols {
@@ -423,7 +581,7 @@ fn draw_panel(app: &mut CadApp, ui: &mut egui::Ui, panel: &Panel, pr: Rect, acti
             }
             Col::Icons(bs) => {
                 for (i, (icon, cmd, label)) in bs.iter().enumerate() {
-                    let rr = Rect::from_min_size(pos2(cr.left(), cr.top() + i as f32 * ROW_H + 1.0), vec2(20.0, ROW_H - 2.0));
+                    let rr = Rect::from_min_size(pos2(cr.left(), cr.top() + i as f32 * ROW_H + 1.0), vec2(w - 4.0, ROW_H - 2.0));
                     small_button(ui, rr, *icon, cmd, label, false, action);
                 }
             }
@@ -436,11 +594,33 @@ fn draw_panel(app: &mut CadApp, ui: &mut egui::Ui, panel: &Panel, pr: Rect, acti
 
 fn big_button(ui: &mut egui::Ui, r: Rect, icon: Icon, cmd: &'static str, label: &'static str, action: &mut Option<Action>) {
     let t = Tokens::get();
-    let resp = ui.interact(r.shrink2(vec2(2.0, 0.0)), ui.id().with(("rb_big", cmd, label)), Sense::click());
-    let p = ui.painter();
+    let list = variants(cmd);
+    let full = r.shrink2(vec2(2.0, 0.0));
+    // A split button: the arrow strip at the foot opens the variants.
+    let (main, arrow) = match list {
+        Some(_) => {
+            let cut = full.bottom() - 12.0;
+            (Rect::from_min_max(full.min, pos2(full.right(), cut)), Some(Rect::from_min_max(pos2(full.left(), cut), full.max)))
+        }
+        None => (full, None),
+    };
+    let resp = ui.interact(main, ui.id().with(("rb_big", cmd, label)), Sense::click());
+    let p = ui.painter().clone();
     if resp.hovered() {
-        p.rect_filled(resp.rect, 3.0, t.control_hover.gamma_multiply(0.6));
+        p.rect_filled(full, 3.0, t.control_hover.gamma_multiply(0.45));
+        p.rect_filled(main, 3.0, t.control_hover.gamma_multiply(0.3));
     }
+    if let (Some(ar), Some(list)) = (arrow, list) {
+        let aresp = ui.interact(ar, ui.id().with(("rb_big_arrow", cmd, label)), Sense::click());
+        if aresp.hovered() {
+            p.rect_filled(full, 3.0, t.control_hover.gamma_multiply(0.3));
+            p.rect_filled(ar, 3.0, t.control_hover.gamma_multiply(0.45));
+        }
+        icons::paint(&p, Rect::from_center_size(pos2(ar.center().x, ar.center().y + 1.0), vec2(8.0, 8.0)), Icon::ChevronDown, false);
+        let _ = aresp.clone().on_hover_text(label.replace('\n', " "));
+        variants_popup(ui, &aresp, list, action);
+    }
+    let p = ui.painter();
     icons::paint(p, Rect::from_center_size(pos2(r.center().x, r.top() + 16.0), vec2(28.0, 28.0)), icon, false);
     for (i, line) in label.lines().enumerate() {
         p.text(pos2(r.center().x, r.top() + 33.0 + i as f32 * 13.0), Align2::CENTER_TOP, line, ribbon_font(), t.text);
@@ -454,11 +634,30 @@ fn big_button(ui: &mut egui::Ui, r: Rect, icon: Icon, cmd: &'static str, label: 
 
 fn small_button(ui: &mut egui::Ui, r: Rect, icon: Icon, cmd: &'static str, label: &'static str, with_label: bool, action: &mut Option<Action>) {
     let t = Tokens::get();
+    let list = variants(cmd);
+    // A split button: the small arrow at the right opens the variants.
+    let (r, arrow) = match list {
+        Some(_) => {
+            let text_end = if with_label { r.left() + 22.0 + text_w(ui, label) + 2.0 } else { r.left() + 20.0 };
+            let ar = Rect::from_min_max(pos2(text_end, r.top()), pos2((text_end + 12.0).min(r.right()), r.bottom()));
+            (Rect::from_min_max(r.min, pos2(text_end, r.bottom())), Some(ar))
+        }
+        None => (r, None),
+    };
     let resp = ui.interact(r, ui.id().with(("rb_small", cmd, label)), Sense::click());
-    let p = ui.painter();
+    let p = ui.painter().clone();
     if resp.hovered() {
         p.rect_filled(r, 2.0, t.control_hover.gamma_multiply(0.6));
     }
+    if let (Some(ar), Some(list)) = (arrow, list) {
+        let aresp = ui.interact(ar, ui.id().with(("rb_small_arrow", cmd, label)), Sense::click());
+        if aresp.hovered() {
+            p.rect_filled(ar, 2.0, t.control_hover.gamma_multiply(0.6));
+        }
+        icons::paint(&p, Rect::from_center_size(ar.center(), vec2(7.0, 7.0)), Icon::ChevronDown, false);
+        variants_popup(ui, &aresp, list, action);
+    }
+    let p = ui.painter();
     icons::paint(p, Rect::from_min_size(pos2(r.left() + 2.0, r.center().y - 7.0), vec2(16.0, 16.0)), icon, false);
     if with_label {
         p.text(pos2(r.left() + 22.0, r.center().y), Align2::LEFT_CENTER, label, ribbon_font(), t.text);
@@ -467,6 +666,47 @@ fn small_button(ui: &mut egui::Ui, r: Rect, icon: Icon, cmd: &'static str, label
     if resp.on_hover_text(label).clicked() {
         *action = Some(Action::Start(cmd));
     }
+}
+
+/// The list under a split button's arrow: icon and name per variant, as in the reference program.
+fn variants_popup(_ui: &mut egui::Ui, anchor: &egui::Response, list: &'static [Btn], action: &mut Option<Action>) {
+    egui::Popup::from_toggle_button_response(anchor).close_behavior(egui::PopupCloseBehavior::CloseOnClickOutside).show(|ui| {
+        let t = Tokens::get();
+        let w = list.iter().map(|b| text_w(ui, b.2)).fold(120.0, f32::max) + 44.0;
+        for (i, (icon, cmd, label)) in list.iter().enumerate() {
+            let (r, row) = ui.allocate_exact_size(vec2(w, 28.0), Sense::click());
+            if row.hovered() {
+                ui.painter().rect_filled(r, 2.0, t.control_hover.gamma_multiply(0.6));
+            }
+            icons::paint(ui.painter(), Rect::from_min_size(pos2(r.left() + 6.0, r.center().y - 10.0), vec2(20.0, 20.0)), *icon, false);
+            ui.painter().text(pos2(r.left() + 34.0, r.center().y), Align2::LEFT_CENTER, *label, ribbon_font(), t.text);
+            if i + 1 < list.len() {
+                ui.painter().hline(r.left() + 4.0..=r.right() - 4.0, r.bottom(), Stroke::new(1.0, t.border.gamma_multiply(0.5)));
+            }
+            icons::describe_control(ui, &row, label, None, false);
+            if row.clicked() {
+                *action = Some(Action::Start(*cmd));
+                ui.close();
+            }
+        }
+    });
+}
+
+/// A panel's slide-out: its further tools as icons, in rows of seven.
+fn slide_out(_ui: &mut egui::Ui, anchor: &egui::Response, list: &'static [Btn], action: &mut Option<Action>) {
+    egui::Popup::from_toggle_button_response(anchor).close_behavior(egui::PopupCloseBehavior::CloseOnClickOutside).show(|ui| {
+        for row in list.chunks(7) {
+            ui.horizontal(|ui| {
+                ui.spacing_mut().item_spacing = vec2(2.0, 2.0);
+                for (icon, cmd, label) in row {
+                    if icons::button(ui, *icon, 26.0, label, false).clicked() {
+                        *action = Some(Action::Start(*cmd));
+                        ui.close();
+                    }
+                }
+            });
+        }
+    });
 }
 
 /// The current-layer list (bulb, sun, lock, colour, name) and two rows of layer tools.
