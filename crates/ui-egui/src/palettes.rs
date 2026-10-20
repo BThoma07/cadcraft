@@ -1061,6 +1061,7 @@ pub(crate) fn properties_section(app: &mut CadApp, ui: &mut egui::Ui) {
             match &e.kind {
                 EntityKind::Text(_) | EntityKind::MText(_) => "Text",
                 EntityKind::Dimension(_) => "Misc",
+                EntityKind::Hatch(_) => "Hatch pattern",
                 _ => "Geometry",
             },
         );
@@ -1190,8 +1191,48 @@ pub(crate) fn properties_section(app: &mut CadApp, ui: &mut egui::Ui) {
                         set = Some(json!({ "handles": ids, "text": s }));
                     }
                 });
+                prop_row(ui, "Style", |ui| read_only(ui, &tx.style));
+                prop_row(ui, "Annotative", |ui| read_only(ui, if e.common.anno_scales.is_empty() { "No" } else { "Yes" }));
+                let attach = match tx.attach {
+                    1 => "Top left",
+                    2 => "Top center",
+                    3 => "Top right",
+                    4 => "Middle left",
+                    5 => "Middle center",
+                    6 => "Middle right",
+                    7 => "Bottom left",
+                    8 => "Bottom center",
+                    9 => "Bottom right",
+                    _ => "Top left",
+                };
+                prop_row(ui, "Justify", |ui| read_only(ui, attach));
                 num(ui, "Text height", "height", len(tx.height), &mut set, &mut bad, &ids);
+                prop_row(ui, "Rotation", |ui| read_only(ui, &real(angles.shown(tx.rotation).to_degrees())));
+                prop_row(ui, "Line space factor", |ui| read_only(ui, &real(tx.line_spacing)));
+                prop_row(ui, "Line space style", |ui| read_only(ui, if tx.line_spacing_exact { "Exactly" } else { "At least" }));
                 num(ui, "Defined width", "width", len(tx.width), &mut set, &mut bad, &ids);
+                prop_group(ui, "Geometry");
+                prop_row(ui, "Position X", |ui| read_only(ui, &len(tx.insert.x)));
+                prop_row(ui, "Position Y", |ui| read_only(ui, &len(tx.insert.y)));
+                prop_row(ui, "Position Z", |ui| read_only(ui, &len(tx.insert.z)));
+            }
+            EntityKind::Ellipse(el) => {
+                let major = (el.major.x * el.major.x + el.major.y * el.major.y + el.major.z * el.major.z).sqrt();
+                let minor = major * el.ratio;
+                let mut sweep = el.end - el.start;
+                while sweep <= 0.0 {
+                    sweep += std::f64::consts::TAU;
+                }
+                prop_row(ui, "Center X", |ui| read_only(ui, &len(el.center.x)));
+                prop_row(ui, "Center Y", |ui| read_only(ui, &len(el.center.y)));
+                prop_row(ui, "Center Z", |ui| read_only(ui, &len(el.center.z)));
+                prop_row(ui, "Major radius", |ui| read_only(ui, &len(major)));
+                prop_row(ui, "Minor radius", |ui| read_only(ui, &len(minor)));
+                prop_row(ui, "Radius ratio", |ui| read_only(ui, &real(el.ratio)));
+                prop_row(ui, "Start angle", |ui| read_only(ui, &real(el.start.to_degrees())));
+                prop_row(ui, "End angle", |ui| read_only(ui, &real(el.end.to_degrees())));
+                // The full ellipse's area; a part of one is the sector of the parameter sweep.
+                prop_row(ui, "Area", |ui| read_only(ui, &real(major * minor * sweep / 2.0)));
             }
             EntityKind::LwPolyline(pl) => {
                 if let Some(v) = pl.vertices.first() {
@@ -1227,6 +1268,15 @@ pub(crate) fn properties_section(app: &mut CadApp, ui: &mut egui::Ui) {
                 });
                 num(ui, "Scale", "scale", real(hh.scale), &mut set, &mut bad, &ids);
                 num(ui, "Angle", "angle", real(hh.angle.to_degrees()), &mut set, &mut bad, &ids);
+                prop_row(ui, "Type", |ui| read_only(ui, if hh.solid { "Solid" } else if hh.gradient.is_some() { "Gradient" } else { "Predefined" }));
+                prop_row(ui, "Origin X", |ui| read_only(ui, &len(hh.origin.x)));
+                prop_row(ui, "Origin Y", |ui| read_only(ui, &len(hh.origin.y)));
+                prop_group(ui, "Geometry");
+                prop_row(ui, "Elevation", |ui| read_only(ui, &len(hh.elevation)));
+                prop_group(ui, "Misc");
+                prop_row(ui, "Associative", |ui| read_only(ui, if hh.associative { "Yes" } else { "No" }));
+                prop_row(ui, "Annotative", |ui| read_only(ui, if e.common.anno_scales.is_empty() { "No" } else { "Yes" }));
+                prop_row(ui, "Island detection style", |ui| read_only(ui, match hh.style { 1 => "Outer", 2 => "Ignore", _ => "Normal" }));
             }
             EntityKind::Dimension(dm) => {
                 prop_row(ui, "Dim style", |ui| {
@@ -1268,8 +1318,18 @@ pub(crate) fn properties_section(app: &mut CadApp, ui: &mut egui::Ui) {
                 prop_row(ui, "Position X", |ui| read_only(ui, &len(i.insert.x)));
                 prop_row(ui, "Position Y", |ui| read_only(ui, &len(i.insert.y)));
                 prop_row(ui, "Position Z", |ui| read_only(ui, &len(i.insert.z)));
-                num(ui, "Rotation", "rotation", real(angles.shown(i.rotation).to_degrees()), &mut set, &mut bad, &ids);
                 num(ui, "Scale", "scale", real(i.scale.x), &mut set, &mut bad, &ids);
+                prop_row(ui, "Scale X", |ui| read_only(ui, &real(i.scale.x)));
+                prop_row(ui, "Scale Y", |ui| read_only(ui, &real(i.scale.y)));
+                prop_row(ui, "Scale Z", |ui| read_only(ui, &real(i.scale.z)));
+                prop_group(ui, "Misc");
+                num(ui, "Rotation", "rotation", real(angles.shown(i.rotation).to_degrees()), &mut set, &mut bad, &ids);
+                if !i.attribs.is_empty() {
+                    prop_group(ui, "Attributes");
+                    for a in &i.attribs {
+                        prop_row(ui, &a.tag, |ui| read_only(ui, &a.text.value));
+                    }
+                }
                 if let Some((_, props)) = custom.filter(|(_, p)| !p.is_empty()) {
                     prop_group(ui, "Custom");
                     for p in &props {

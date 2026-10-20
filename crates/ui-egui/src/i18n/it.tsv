@@ -1305,3 +1305,31 @@ menu	Help	?
 	Start segment width	Larghezza segmento iniziale
 	End segment width	Larghezza segmento finale
 	Text override (local)	Modifica locale al testo
+	Hatch pattern	Motivo
+	Predefined	Predefinito
+	Origin X	X origine
+	Origin Y	Y origine
+	Island detection style	Stile rilevamento isole
+	Outer	Esterno
+	Ignore	Ignora
+	Normal	Normale
+	Scale X	Scala X
+	Scale Y	Scala Y
+	Scale Z	Scala Z
+	Attributes	Attributi
+	Major radius	Raggio maggiore
+	Minor radius	Raggio minore
+	Radius ratio	Rapporto raggi
+	Line space factor	Fattore interlinea
+	Line space style	Stile interlinea
+	Exactly	Esatto
+	At least	Almeno
+	Top left	In alto a sinistra
+	Top center	In alto al centro
+	Top right	In alto a destra
+	Middle left	Al centro a sinistra
+	Middle center	Al centro
+	Middle right	Al centro a destra
+	Bottom left	In basso a sinistra
+	Bottom center	In basso al centro
+	Bottom right	In basso a destra
