@@ -420,7 +420,7 @@ pub fn show(app: &mut CadApp, ui: &mut egui::Ui, canvas: Rect) {
     let lines: Vec<String> = app.session.log.iter().rev().take(n).rev().cloned().collect();
     if !lines.is_empty() {
         let lh = 16.0;
-        let hr = Rect::from_min_size(pos2(bar.left(), bar.top() - lh * lines.len() as f32 - 4.0), vec2(w, lh * lines.len() as f32 + 2.0));
+        let hr = Rect::from_min_size(pos2(bar.left(), bar.top() - lh * lines.len() as f32 - 4.0), vec2(bar.width(), lh * lines.len() as f32 + 2.0));
         p.rect_filled(hr, 3.0, t.cmd_history);
         for (i, l) in lines.iter().enumerate() {
             p.text(pos2(hr.left() + 8.0, hr.top() + 1.0 + lh * i as f32), egui::Align2::LEFT_TOP, l, crate::theme::small(), t.text_dim);
