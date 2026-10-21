@@ -449,9 +449,11 @@ fn extra(title: &str) -> Option<&'static [Btn]> {
 }
 
 const TAB_H: f32 = 24.0;
-const BODY_H: f32 = 66.0;
-const TITLE_H: f32 = 17.0;
-const ROW_H: f32 = 21.0;
+// Measured on the reference program at 100 % (2560 × 1440): rows of small buttons 24 px apart,
+// panels 98 px tall with a 22 px title bar.
+const BODY_H: f32 = 76.0;
+const TITLE_H: f32 = 22.0;
+const ROW_H: f32 = 24.0;
 const PAD: f32 = 6.0;
 
 /// Every command a ribbon button starts, for the test that they all exist.
@@ -668,9 +670,9 @@ fn big_button(ui: &mut egui::Ui, r: Rect, icon: Icon, cmd: &'static str, label: 
         variants_popup(ui, &aresp, list, action);
     }
     let p = ui.painter();
-    icons::paint(p, Rect::from_center_size(pos2(r.center().x, r.top() + 16.0), vec2(28.0, 28.0)), icon, false);
+    icons::paint(p, Rect::from_center_size(pos2(r.center().x, r.top() + 19.0), vec2(32.0, 32.0)), icon, false);
     for (i, line) in label.lines().enumerate() {
-        p.text(pos2(r.center().x, r.top() + 33.0 + i as f32 * 13.0), Align2::CENTER_TOP, line, ribbon_font(), t.text);
+        p.text(pos2(r.center().x, r.top() + 38.0 + i as f32 * 14.0), Align2::CENTER_TOP, line, ribbon_font(), t.text);
     }
     let tip = label.replace('\n', " ");
     icons::describe_control(ui, &resp, &tip, None, false);

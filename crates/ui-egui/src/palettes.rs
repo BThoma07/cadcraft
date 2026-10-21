@@ -573,8 +573,8 @@ fn prop_group(ui: &mut egui::Ui, title: &str) {
     let t = Tokens::get();
     let id = egui::Id::new(("prop_group_collapsed", title));
     let mut collapsed = ui.data(|d| d.get_temp::<bool>(id)).unwrap_or(false);
-    let (r, resp) = ui.allocate_exact_size(vec2(ui.available_width(), 18.0), Sense::click());
-    let bar = Rect::from_min_max(pos2(r.left() + 6.0, r.top()), pos2(r.right() - 4.0, r.bottom()));
+    let (r, resp) = ui.allocate_exact_size(vec2(ui.available_width(), 19.0), Sense::click());
+    let bar = Rect::from_min_max(pos2(r.left() + 6.0, r.top() + 1.0), pos2(r.right() - 4.0, r.bottom()));
     ui.painter().rect_filled(bar, 0.0, t.chrome_dark);
     ui.painter().text(
         pos2(bar.left() + 6.0, bar.center().y),
@@ -785,6 +785,8 @@ pub(crate) fn properties_section(app: &mut CadApp, ui: &mut egui::Ui) {
     let sel = app.session.selection();
     let Ok(d) = app.session.doc() else { return };
     ui.add_space(4.0);
+    // Rows touch, as in the reference program's property grid (19 px apart).
+    ui.spacing_mut().item_spacing.y = 0.0;
     let h = &d.header;
     // Lengths are shown as the drawing's units say (UNITS), and read back in any format.
     let (lu, lp) = (h.i64("LUNITS", 2), h.i64("LUPREC", 4));

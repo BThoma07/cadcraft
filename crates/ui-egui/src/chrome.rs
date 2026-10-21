@@ -180,22 +180,17 @@ pub fn file_tabs(app: &mut CadApp, ui: &mut egui::Ui) {
     egui::Panel::top("cc_file_tabs").exact_size(26.0).frame(egui::Frame::NONE.fill(t.chrome_dark)).show(ui, |ui| {
         let r = ui.max_rect();
         let mut x = r.left() + 4.0;
+        // As in the reference program: the file menu button, the tabs, then "+" after the last tab.
         let ib = Rect::from_min_size(pos2(x, r.top() + 4.0), vec2(18.0, 18.0));
-        icons::paint(ui.painter(), ib.shrink(1.0), Icon::Switcher, false);
-        x += 24.0;
-        let plus = Rect::from_min_size(pos2(x, r.top() + 4.0), vec2(18.0, 18.0));
-        let presp = ui.interact(plus, ui.id().with("tab+"), Sense::click());
-        icons::paint(ui.painter(), plus.shrink(2.0), Icon::Plus, false);
-        icons::describe_control(ui, &presp, "New Drawing", None, false);
-        if presp.on_hover_text(crate::tl!("New Drawing")).clicked() {
-            app.start("new");
-            app.ui.start_tab = false;
-        }
-        x += 24.0;
+        icons::paint(ui.painter(), ib.shrink(1.0), Icon::Menu, false);
+        x += 26.0;
         // `label` is the drawing's name; `dirty` adds the unsaved-changes mark, kept visible when a
         // long name is cut short.
         let mut tab =
             |ui: &mut egui::Ui, label: &str, dirty: bool, active: bool, closable: bool, w: f32, id: egui::Id| -> (bool, bool, egui::Response) {
+                // As wide as the name needs, up to `w`.
+                let name_w = ui.painter().layout_no_wrap(format!("{label}{}", if dirty { "*" } else { "" }), crate::theme::body(), t.text).size().x;
+                let w = (name_w + 8.0 + if closable { 26.0 } else { 12.0 }).min(w);
                 let tr = Rect::from_min_size(pos2(x, r.top()), vec2(w, r.height()));
                 let resp = ui.interact(tr, id, Sense::click());
                 ui.painter().rect_filled(
@@ -253,6 +248,17 @@ pub fn file_tabs(app: &mut CadApp, ui: &mut egui::Ui) {
                 close = Some(i);
             }
         }
+        let plus = Rect::from_min_size(pos2(x + 4.0, r.top() + 4.0), vec2(18.0, 18.0));
+        let presp = ui.interact(plus, ui.id().with("tab+"), Sense::click());
+        if presp.hovered() {
+            ui.painter().rect_filled(plus.expand(1.0), 2.0, t.chrome);
+        }
+        icons::paint(ui.painter(), plus.shrink(2.0), Icon::Plus, false);
+        icons::describe_control(ui, &presp, "New Drawing", None, false);
+        if presp.on_hover_text(crate::tl!("New Drawing")).clicked() {
+            app.start("new");
+            app.ui.start_tab = false;
+        }
         if let Some(i) = switch_to {
             let _ = app.run("document.switch", json!({ "index": i }));
             app.ui.start_tab = false;
@@ -309,7 +315,8 @@ pub fn status_bar(app: &mut CadApp, ui: &mut egui::Ui) {
             ui.ctx().request_repaint_after(left);
         }
         let mut list_button = None;
-        for (icon, tip) in [(Icon::Plus, "New layout"), (Icon::Menu, "Layout list")] {
+        // As in the reference program: the layout list button, Model, the layouts, then "+".
+        for (icon, tip) in [(Icon::Menu, "Layout list")] {
             let br = Rect::from_min_size(pos2(x, r.top() + 4.0), vec2(18.0, 18.0));
             let resp = ui.interact(br, ui.id().with(("sb", tip)), Sense::click());
             icons::paint(&p, br.shrink(2.0), icon, false);
@@ -324,7 +331,7 @@ pub fn status_bar(app: &mut CadApp, ui: &mut egui::Ui) {
             }
             x += 22.0;
         }
-        x = x.max(r.left() + if app.ui.show_toolsets { 232.0 } else { 60.0 });
+        x = x.max(r.left() + if app.ui.show_toolsets { 232.0 } else { 34.0 });
         // Right side: toggles, right-aligned.
         let s = app.session.settings.clone();
         let anno_all = app.session.doc().is_ok_and(|d| d.anno_all_visible());
@@ -376,6 +383,12 @@ pub fn status_bar(app: &mut CadApp, ui: &mut egui::Ui) {
             coord_right = br.left() - 10.0;
             // Scale and lock of the active or selected viewport.
             coord_right = crate::vpscale::status(app, ui, coord_right + 4.0, r.center().y) - 10.0;
+        } else {
+            // Model space shows its name there too, in capitals.
+            let g = p.layout_no_wrap(crate::i18n::t("MODEL").to_string(), crate::theme::small(), t.text);
+            let at = pos2(coord_right - g.size().x, r.center().y - g.size().y / 2.0);
+            coord_right = at.x - 10.0;
+            p.galley(at, g, t.text);
         }
         // Layout tabs: Model, "+", then the layouts that fit before the right-hand controls (the
         // current one always); the layout list reaches the rest.
@@ -428,19 +441,23 @@ pub fn status_bar(app: &mut CadApp, ui: &mut egui::Ui) {
             }
             crate::shortcut_menus::attach(app, &resp, |app| crate::shortcut_menus::layout_tab_entries(app, name));
             x += w + 2.0;
-            if i == 0 {
-                let pr = Rect::from_min_size(pos2(x, r.top() + 5.0), vec2(16.0, 16.0));
-                let presp = ui.interact(pr, ui.id().with("layout_plus"), Sense::click());
-                icons::paint(&p, pr.shrink(2.0), Icon::Plus, false);
-                icons::describe_control(ui, &presp, "New layout", None, false);
-                if presp.on_hover_text(crate::tl!("New layout")).clicked()
-                    && let Ok(v) = app.run("layout.new", json!({}))
-                    && let Some(n) = v.get("name").and_then(serde_json::Value::as_str)
-                {
-                    switch = Some(n.to_string());
-                }
-                x += 22.0;
+        }
+        // "+" after the last layout shown.
+        {
+            let pr = Rect::from_min_size(pos2(x + 2.0, r.top() + 5.0), vec2(16.0, 16.0));
+            let presp = ui.interact(pr, ui.id().with("layout_plus"), Sense::click());
+            if presp.hovered() {
+                p.rect_filled(pr, 3.0, t.control_hover.gamma_multiply(0.5));
             }
+            icons::paint(&p, pr.shrink(2.0), Icon::Plus, false);
+            icons::describe_control(ui, &presp, "New layout", None, false);
+            if presp.on_hover_text(crate::tl!("New layout")).clicked()
+                && let Ok(v) = app.run("layout.new", json!({}))
+                && let Some(n) = v.get("name").and_then(serde_json::Value::as_str)
+            {
+                switch = Some(n.to_string());
+            }
+            x += 22.0;
         }
         // The layouts that didn't fit, behind a button after the last tab shown.
         let more = hidden.then(|| {

@@ -680,6 +680,10 @@ pub struct Session {
     /// SIngle typed at "Select objects": the next selection ends the prompt.
     pub select_single: bool,
     pub untitled_counter: u32,
+    /// The name of new drawings before their number ("Drawing" makes Drawing1, Drawing2...).
+    pub untitled_name: String,
+    /// New drawings are metric (millimetres, ISO), as with an ISO template.
+    pub new_metric: bool,
     /// The last dimension created (DIMCONTINUE / DIMBASELINE).
     pub last_dim: Option<Handle>,
     /// Options remembered between invocations of interactive commands.
@@ -736,6 +740,8 @@ impl Session {
             select_mode: None,
             select_single: false,
             untitled_counter: 0,
+            untitled_name: "Drawing".into(),
+            new_metric: false,
             last_dim: None,
             last_used: LastUsed::default(),
             clipboard_source: None,
@@ -748,7 +754,7 @@ impl Session {
     pub fn new_drawing(&mut self, metric: bool) -> usize {
         self.untitled_counter += 1;
         let d = if metric { Drawing::new_metric() } else { Drawing::new_imperial() };
-        let mut st = DocState::new(d, &format!("Drawing{}", self.untitled_counter), None);
+        let mut st = DocState::new(d, &format!("{}{}", self.untitled_name, self.untitled_counter), None);
         st.set_view_quiet(if metric { View { center: Vec2::new(210.0, 148.5), height: 297.0 } } else { View::default() });
         self.end_running();
         self.docs.push(st);

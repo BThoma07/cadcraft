@@ -362,7 +362,7 @@ fn main() -> eframe::Result {
                 app.open_path(f);
             }
             if app.session.docs.is_empty() {
-                app.session.new_drawing(false);
+                app.session.new_drawing(app.session.new_metric);
             }
             // Italian edition: the command aliases of the user's own alias file, read at startup
             // as the reference program does.

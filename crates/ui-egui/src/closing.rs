@@ -246,7 +246,7 @@ mod tests {
     fn app_with(titles: &[&str]) -> CadApp {
         let mut app = CadApp::new(Session::empty(), Services::default());
         for _ in titles {
-            app.session.new_drawing(false);
+            app.session.new_drawing(app.session.new_metric);
         }
         for (d, t) in app.session.docs.iter_mut().zip(titles) {
             d.title = (*t).to_string();

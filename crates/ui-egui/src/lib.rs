@@ -451,7 +451,10 @@ impl CadApp {
         // 1: layout, language, ribbon, colours. 2: a larger interface (the reference program's
         // controls are bigger). 3: no fades or smoothed scrolling: menus and palettes appear at
         // once, as in the reference program.
-        const REV: u32 = 3;
+        const REV: u32 = 4;
+        // New drawings as with the Italian ISO template: Disegno1, Disegno2... in millimetres.
+        self.session.untitled_name = "Disegno".into();
+        self.session.new_metric = true;
         let rev = if self.ui.autocad_edition { self.ui.autocad_edition_rev.max(1) } else { 0 };
         if rev >= REV {
             return;
@@ -475,6 +478,11 @@ impl CadApp {
         }
         if rev < 3 {
             self.ui.animations = animation::AnimationPref::Off;
+        }
+        // 4: measured side by side on the same 2560 × 1440 screen, the reference program's text and
+        // rows match CADCraft at 100 %; 125 % was a quarter too big.
+        if rev < 4 && (self.options.interface_scale - 1.25).abs() < 0.01 {
+            self.options.interface_scale = 1.0;
         }
         self.ui.autocad_edition = true;
         self.ui.autocad_edition_rev = REV;

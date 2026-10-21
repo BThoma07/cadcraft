@@ -45,7 +45,7 @@ pub(super) fn run_new(s: &mut Session, p: &Value) -> Result<Option<Value>> {
     let Some(path) = template_for(p)? else { return Ok(None) };
     let d = read_template(&path)?;
     s.untitled_counter = s.untitled_counter.saturating_add(1);
-    let title = format!("Drawing{}", s.untitled_counter);
+    let title = format!("{}{}", s.untitled_name, s.untitled_counter);
     let i = s.open_drawing(d, &title, None);
     // An empty template shows its drawing limits.
     if let Some(st) = s.docs.get_mut(i)
