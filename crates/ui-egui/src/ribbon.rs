@@ -95,7 +95,7 @@ const HOME: &[Panel] = &[
     Panel {
         title: "Appunti",
         cols: &[
-            Col::Big((Icon::Insert, "pasteclip", "Incolla")),
+            Col::Big((Icon::Paste, "pasteclip", "Incolla")),
             Col::Icons(&[(Icon::Copy, "copyclip", "Copia negli Appunti"), (Icon::Erase, "cutclip", "Taglia negli Appunti")]),
         ],
     },

@@ -149,6 +149,7 @@ pub enum Icon {
     PickAdd,
     SelectObjects,
     QuickSelect,
+    Paste,
 }
 
 struct Pen<'a> {
@@ -213,6 +214,17 @@ impl Pen<'_> {
     fn tri(&self, pts: [(f32, f32); 3], c: Color32) {
         self.p.add(egui::Shape::convex_polygon(pts.iter().map(|(x, y)| self.at(*x, *y)).collect(), c, Stroke::NONE));
     }
+    /// A filled convex polygon with a thin outline.
+    fn fill_poly(&self, pts: &[(f32, f32)], fill: Color32, outline: Color32) {
+        let v: Vec<Pos2> = pts.iter().map(|(x, y)| self.at(*x, *y)).collect();
+        self.p.add(egui::Shape::convex_polygon(v, fill, Stroke::new((self.w * 0.7).max(0.8), outline)));
+    }
+    /// A small square grip, as the large drawing icons mark their vertices.
+    fn grip(&self, x: f32, y: f32, c: Color32) {
+        let h = 1.5 * self.sc();
+        let at = self.at(x, y);
+        self.p.rect_filled(Rect::from_center_size(at, egui::vec2(2.0 * h, 2.0 * h)), 0.0, c);
+    }
     fn arrow_tip(&self, x: f32, y: f32, dx: f32, dy: f32, c: Color32) {
         let l = (dx * dx + dy * dy).sqrt().max(1e-3);
         let (ux, uy) = (dx / l, dy / l);
@@ -228,6 +240,16 @@ impl Pen<'_> {
 pub fn paint(p: &Painter, rect: Rect, icon: Icon, dim: bool) {
     let t = Tokens::get();
     let alpha = |c: Color32| if dim { c.gamma_multiply(0.4) } else { c };
+    // The colours of the large ribbon icons (original drawings): pale lines, blue grips and
+    // faces, yellow measuring tools, a white sheet.
+    let pale = alpha(Color32::from_rgb(0xdc, 0xe1, 0xe8));
+    let blue = alpha(Color32::from_rgb(0x3d, 0x9b, 0xf0));
+    let blue_dark = alpha(Color32::from_rgb(0x23, 0x5f, 0xa8));
+    let blue_light = alpha(Color32::from_rgb(0x9c, 0xcd, 0xf7));
+    let yellow = alpha(Color32::from_rgb(0xec, 0xb8, 0x32));
+    let yellow_dark = alpha(Color32::from_rgb(0x9a, 0x70, 0x12));
+    let sheet = alpha(Color32::from_rgb(0xf2, 0xf4, 0xf7));
+    let outline = alpha(Color32::from_rgb(0x1c, 0x22, 0x2b));
     let pen = Pen { p, r: rect, w: (rect.width() / 16.0).clamp(1.0, 1.6), base: alpha(t.icon), acc: alpha(t.icon_accent), pt: alpha(t.icon_point) };
     let (b, a) = (pen.base, pen.acc);
     use Icon::*;
@@ -349,10 +371,16 @@ pub fn paint(p: &Painter, rect: Rect, icon: Icon, dim: bool) {
             pen.poly(&[(4.0, 7.0), (4.0, 16.0), (12.0, 20.0), (20.0, 16.0), (20.0, 7.0)], false, b);
             pen.l(12.0, 11.0, 12.0, 20.0);
         }
-        Layers | LayerProps => {
+        Layers => {
             for (k, y) in [5.0f32, 10.0, 15.0].iter().enumerate() {
                 let c = if k == 0 { a } else { b };
                 pen.poly(&[(3.0, y + 2.0), (12.0, *y - 2.0), (21.0, y + 2.0), (12.0, y + 6.0)], true, c);
+            }
+        }
+        LayerProps => {
+            // Three filled sheets, bottom to top: yellow, blue, white.
+            for (y, fill) in [(15.0f32, yellow), (10.0, blue_light), (5.0, sheet)] {
+                pen.fill_poly(&[(2.0, y + 2.5), (12.0, y - 2.0), (22.0, y + 2.5), (12.0, y + 7.0)], fill, outline);
             }
         }
         Help => {
@@ -360,27 +388,29 @@ pub fn paint(p: &Painter, rect: Rect, icon: Icon, dim: bool) {
             pen.text(12.0, 12.5, "?", 12.0, b);
         }
         Line => {
-            pen.la(4.0, 20.0, 20.0, 4.0);
-            pen.dot(4.0, 20.0);
-            pen.dot(20.0, 4.0);
+            pen.poly(&[(4.0, 20.0), (20.0, 4.0)], false, pale);
+            pen.grip(4.0, 20.0, blue);
+            pen.grip(20.0, 4.0, blue);
         }
         Polyline => {
-            pen.poly(&[(3.0, 19.0), (8.0, 8.0), (14.0, 15.0)], false, a);
-            pen.arc(17.0, 11.0, 5.0, 220.0, 360.0 + 20.0, a);
-            pen.dot(3.0, 19.0);
-            pen.dot(8.0, 8.0);
-            pen.dot(14.0, 15.0);
+            pen.poly(&[(3.0, 19.0), (3.0, 9.0), (13.0, 9.0)], false, pale);
+            pen.arc(13.0, 14.0, 5.0, 90.0, -90.0, pale);
+            pen.poly(&[(13.0, 19.0), (8.0, 19.0)], false, pale);
+            pen.grip(3.0, 19.0, blue);
+            pen.grip(3.0, 9.0, blue);
+            pen.grip(13.0, 9.0, blue);
+            pen.grip(8.0, 19.0, blue);
         }
         Circle => {
-            pen.c(12.0, 12.0, 8.0, a);
-            pen.l(12.0, 12.0, 18.0, 6.5);
-            pen.dot(12.0, 12.0);
+            pen.c(12.0, 12.0, 8.5, pale);
+            pen.poly(&[(12.0, 12.0), (18.0, 6.0)], false, blue);
+            pen.grip(12.0, 12.0, blue);
         }
         Arc => {
-            pen.arc(12.0, 16.0, 9.0, 10.0, 170.0, a);
-            pen.dot(3.2, 14.5);
-            pen.dot(12.0, 7.0);
-            pen.dot(20.8, 14.5);
+            pen.arc(12.0, 17.0, 9.0, 10.0, 170.0, pale);
+            pen.grip(3.1, 15.4, blue);
+            pen.grip(12.0, 8.0, blue);
+            pen.grip(20.9, 15.4, blue);
         }
         Rectangle => {
             pen.rect(3.0, 6.0, 18.0, 12.0, a);
@@ -480,10 +510,12 @@ pub fn paint(p: &Painter, rect: Rect, icon: Icon, dim: bool) {
         }
         Text => pen.text(12.0, 12.5, "A", 19.0, b),
         MText => {
-            pen.text(9.0, 11.0, "A", 15.0, b);
-            pen.la(14.0, 15.0, 21.0, 15.0);
-            pen.la(14.0, 18.0, 21.0, 18.0);
-            pen.la(14.0, 21.0, 19.0, 21.0);
+            // A bold white capital (drawn twice, a hair apart) and blue lines of text.
+            pen.text(9.0, 11.0, "A", 17.0, sheet);
+            pen.text(9.5, 11.0, "A", 17.0, sheet);
+            for (y, x1) in [(15.0, 22.0), (18.5, 22.0), (22.0, 19.0)] {
+                pen.poly(&[(15.0, y), (x1, y)], false, blue);
+            }
         }
         Move => {
             pen.la(12.0, 3.0, 12.0, 21.0);
@@ -599,18 +631,21 @@ pub fn paint(p: &Painter, rect: Rect, icon: Icon, dim: bool) {
             pen.arrow_tip(21.0, 12.0, 1.0, 0.0, a);
         }
         MatchProp => {
-            pen.rect(4.0, 3.0, 14.0, 6.0, b);
-            pen.l(18.0, 6.0, 20.0, 6.0);
-            pen.poly(&[(20.0, 6.0), (20.0, 11.0), (11.0, 11.0), (11.0, 14.0)], false, b);
-            pen.fill_rect(9.5, 14.0, 3.0, 8.0, a);
+            // A sheet with property lines, and a yellow brush laying them on.
+            pen.fill_poly(&[(3.0, 2.0), (15.0, 2.0), (15.0, 17.0), (3.0, 17.0)], sheet, outline);
+            for y in [6.0, 9.5, 13.0] {
+                pen.poly(&[(5.5, y), (12.5, y)], false, blue_dark);
+            }
+            pen.fill_poly(&[(17.0, 9.0), (21.5, 9.0), (21.5, 15.0), (17.0, 15.0)], yellow, yellow_dark);
+            pen.fill_poly(&[(18.3, 15.0), (20.2, 15.0), (20.2, 22.5), (18.3, 22.5)], yellow_dark, yellow_dark);
         }
         DimLinear | DimAligned | DimBaseline | DimContinue | QDim => {
             let (y0, y1) = (8.0, 18.0);
-            pen.l(4.0, y1, 4.0, 5.0);
-            pen.l(20.0, y1, 20.0, 5.0);
-            pen.la(4.0, y0, 20.0, y0);
-            pen.arrow_tip(4.0, y0, -1.0, 0.0, a);
-            pen.arrow_tip(20.0, y0, 1.0, 0.0, a);
+            pen.poly(&[(4.0, y1), (4.0, 5.0)], false, yellow);
+            pen.poly(&[(20.0, y1), (20.0, 5.0)], false, yellow);
+            pen.poly(&[(4.0, y0), (20.0, y0)], false, yellow);
+            pen.arrow_tip(4.0, y0, -1.0, 0.0, yellow);
+            pen.arrow_tip(20.0, y0, 1.0, 0.0, yellow);
             match icon {
                 DimBaseline => pen.la(4.0, 4.0, 13.0, 4.0),
                 DimContinue => {
@@ -661,8 +696,10 @@ pub fn paint(p: &Painter, rect: Rect, icon: Icon, dim: bool) {
             }
         }
         BlockCreate | Insert | BlockEdit | AttDef => {
-            pen.poly(&[(9.0, 4.0), (17.0, 8.0), (9.0, 12.0), (1.0, 8.0)], true, b);
-            pen.poly(&[(1.0, 8.0), (1.0, 15.0), (9.0, 19.0), (17.0, 15.0), (17.0, 8.0)], false, b);
+            // A blue block, lit from the top left.
+            pen.fill_poly(&[(9.0, 4.0), (17.0, 8.0), (9.0, 12.0), (1.0, 8.0)], blue_light, outline);
+            pen.fill_poly(&[(1.0, 8.0), (9.0, 12.0), (9.0, 19.0), (1.0, 15.0)], blue, outline);
+            pen.fill_poly(&[(9.0, 12.0), (17.0, 8.0), (17.0, 15.0), (9.0, 19.0)], blue_dark, outline);
             match icon {
                 BlockCreate => pen.text(19.0, 5.0, "✳", 9.0, pen.pt),
                 Insert => {
@@ -903,7 +940,24 @@ pub fn paint(p: &Painter, rect: Rect, icon: Icon, dim: bool) {
             pen.l(5.0, 9.0, 19.0, 9.0);
             pen.la(5.0, 15.0, 19.0, 15.0);
         }
-        Measure | Distance => {
+        Measure => {
+            // A yellow ruler with its marks.
+            pen.fill_poly(&[(2.0, 9.0), (22.0, 9.0), (22.0, 16.0), (2.0, 16.0)], yellow, yellow_dark);
+            for (i, x) in [5.0f32, 8.0, 11.0, 14.0, 17.0, 20.0].iter().enumerate() {
+                let len = if i % 2 == 0 { 3.5 } else { 2.0 };
+                pen.poly(&[(*x, 9.0), (*x, 9.0 + len)], false, yellow_dark);
+            }
+        }
+        Paste => {
+            // A clipboard with a sheet on it.
+            pen.fill_poly(&[(3.0, 4.0), (17.0, 4.0), (17.0, 22.0), (3.0, 22.0)], alpha(Color32::from_rgb(0xb8, 0x7d, 0x3e)), outline);
+            pen.fill_poly(&[(7.0, 2.0), (13.0, 2.0), (13.0, 6.0), (7.0, 6.0)], pale, outline);
+            pen.fill_poly(&[(10.0, 9.0), (21.0, 9.0), (21.0, 23.0), (10.0, 23.0)], sheet, outline);
+            for y in [13.0, 16.0, 19.0] {
+                pen.poly(&[(12.5, y), (18.5, y)], false, blue_dark);
+            }
+        }
+        Distance => {
             pen.poly(&[(3.0, 15.0), (21.0, 15.0), (21.0, 20.0), (3.0, 20.0)], true, b);
             for x in [6.0, 9.0, 12.0, 15.0, 18.0] {
                 pen.l(x, 15.0, x, 17.5);
