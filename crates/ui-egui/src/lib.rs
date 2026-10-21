@@ -244,6 +244,11 @@ pub struct CadApp {
     /// The interface scale last handed to egui (`None` until the first frame).
     shown_interface_scale: Option<f32>,
     pub frame_ms: f64,
+    /// The graphics adapter, its backend and the present mode, for GRAPHICSCONFIG.
+    pub graphics_info: Vec<String>,
+    /// Recent frames: (time since the previous frame, time to lay the frame out), in ms.
+    pub frame_log: std::collections::VecDeque<(f64, f64)>,
+    last_frame_start: f64,
     pub quit_requested: bool,
     /// The app may close although drawings have unsaved changes (they were dealt with, or the
     /// quit came from the control channel, which never asks).
@@ -294,6 +299,9 @@ impl CadApp {
             shown_animations: None,
             shown_interface_scale: None,
             frame_ms: 0.0,
+            graphics_info: Vec::new(),
+            frame_log: std::collections::VecDeque::new(),
+            last_frame_start: 0.0,
             quit_requested: false,
             quit_confirmed: false,
             closing: None,
@@ -321,6 +329,13 @@ impl CadApp {
     pub fn set_wgpu(&mut self, rs: &egui_wgpu::RenderState, stencil: Option<egui_wgpu::wgpu::TextureFormat>) {
         self.canvas.gpu = Some(gpu::install(rs, &self.gpu_faults, stencil));
         self.canvas.gpu_device = Some(rs.device.clone());
+        let info = rs.adapter.get_info();
+        let adapter = format!("Scheda grafica: {} ({:?}, {:?})", info.name, info.device_type, info.backend);
+        log::info!("{adapter}; driver {} {}", info.driver, info.driver_info);
+        self.graphics_info.push(adapter);
+        if !info.driver.is_empty() {
+            self.graphics_info.push(format!("Driver: {} {}", info.driver, info.driver_info));
+        }
     }
 
     pub fn with_control(mut self, rx: Receiver<ControlRequest>) -> Self {
@@ -683,6 +698,8 @@ impl CadApp {
 
     fn draw(&mut self, ui: &mut egui::Ui) {
         let t0 = now_ms();
+        let since = t0 - self.last_frame_start;
+        self.last_frame_start = t0;
         control::begin_frame(ui.ctx());
         let t = theme::Tokens::get();
         // As in the Windows edition of the reference program: the menu bar, then the ribbon.
@@ -716,6 +733,10 @@ impl CadApp {
         autosave::show(self, ui.ctx());
         autosave::gpu_notice(self, ui.ctx());
         self.frame_ms = now_ms() - t0;
+        if self.frame_log.len() >= 240 {
+            self.frame_log.pop_front();
+        }
+        self.frame_log.push_back((since, self.frame_ms));
     }
 
     fn drain_control(&mut self, ctx: &egui::Context) {

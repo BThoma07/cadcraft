@@ -350,6 +350,7 @@ fn main() -> eframe::Result {
             if let Some(rs) = &cc.wgpu_render_state {
                 app.set_wgpu(rs, eframe::egui_wgpu::depth_format_from_bits(0, STENCIL_BITS));
             }
+            app.graphics_info.push(format!("Presentazione: {:?} (latenza massima {:?} fotogramma)", surface.present_mode, surface.desired_maximum_frame_latency));
             if let Some(port) = control_port {
                 let rx = control_server::start(port, cc.egui_ctx.clone());
                 app = app.with_control(rx);

@@ -73,6 +73,31 @@ pub const UI_COMMANDS: &[(&str, &str, &[&str], Option<&str>)] = &[
     ("ui.quit", "Quit CADCraft", &[], Some("Cmd+Q")),
 ];
 
+/// GRAPHICSCONFIG: how the drawing is shown (graphics card, present mode) and how long recent
+/// frames took, on the command line.
+fn graphics_report(app: &mut CadApp) -> Value {
+    let mut lines = vec![format!(
+        "Disegno sullo schermo: {}",
+        if app.canvas.gpu.is_some() { "con la scheda grafica (GPU)" } else { "con il processore (CPU, più lento)" }
+    )];
+    lines.extend(app.graphics_info.iter().cloned());
+    let n = app.frame_log.len().max(1) as f64;
+    let mean = app.frame_log.iter().map(|f| f.1).sum::<f64>() / n;
+    let worst = app.frame_log.iter().map(|f| f.1).fold(0.0, f64::max);
+    // Frames close together are the mouse moving; longer gaps are the app waiting for input.
+    let busy: Vec<f64> = app.frame_log.iter().map(|f| f.0).filter(|i| *i > 0.0 && *i < 100.0).collect();
+    let fps = if busy.is_empty() { 0.0 } else { 1000.0 * busy.len() as f64 / busy.iter().sum::<f64>() };
+    lines.push(format!("Tempo per fotogramma: media {mean:.1} ms, massimo {worst:.1} ms; {fps:.0} fotogrammi al secondo col mouse in movimento"));
+    lines.push(format!(
+        "Ultima rigenerazione {:.1} ms, preparazione per la GPU {:.1} ms, disegno {:.1} ms",
+        app.canvas.build_ms, app.canvas.mesh_ms, app.canvas.draw_ms
+    ));
+    for l in &lines {
+        app.session.echo(l.clone());
+    }
+    json!({ "gpu": app.canvas.gpu.is_some(), "lines": lines, "frameMs": mean, "worstFrameMs": worst, "fps": fps })
+}
+
 pub fn is_ui_command(id: &str) -> bool {
     UI_COMMANDS.iter().any(|c| c.0 == id)
 }
@@ -94,6 +119,9 @@ fn run_ui_command_inner(app: &mut CadApp, id: &str, params: &Value) -> Option<Re
     }
     if let Some(r) = crate::managers::route(app, id, params) {
         return Some(r);
+    }
+    if matches!(id, "graphicsconfig" | "ui.graphicsconfig") {
+        return Some(Ok(graphics_report(app)));
     }
     if matches!(id, "ui.dock" | "ui.dock.reset") {
         return Some(crate::docking::command(app, id == "ui.dock.reset", params));

@@ -144,3 +144,13 @@ fn tempo_per_fotogramma_mentre_si_disegna() {
         println!("{:<42} risparmio {:6.2} ms", "", base - t);
     }
 }
+
+#[test]
+fn graphicsconfig_mostra_scheda_e_tempi() {
+    let mut a = app(10);
+    measure(&mut a, line_started);
+    let r = a.run("graphicsconfig", json!({})).unwrap();
+    let lines = r["lines"].as_array().map(|l| l.len()).unwrap_or(0);
+    assert!(lines >= 3, "{r}");
+    assert!(r["fps"].as_f64().unwrap_or(0.0) >= 0.0);
+}
