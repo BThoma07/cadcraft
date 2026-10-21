@@ -4,7 +4,7 @@
 use std::collections::HashSet;
 
 use cadcraft_engine::Input;
-use egui::{Key, Pos2, Rect, Sense, Stroke, pos2, vec2};
+use egui::{Color32, Key, Pos2, Rect, Sense, Stroke, pos2, vec2};
 
 use crate::CadApp;
 use crate::theme::Tokens;
@@ -411,9 +411,8 @@ fn visible_lines(app: &CadApp, canvas: Rect, bar: Rect) -> usize {
 
 pub fn show(app: &mut CadApp, ui: &mut egui::Ui, canvas: Rect) {
     let t = Tokens::get();
-    let w = (canvas.width() * 0.48).clamp(360.0, 760.0).min((canvas.width() - 8.0).max(0.0));
-    let h = 24.0;
-    let bar = Rect::from_min_size(pos2(canvas.center().x - w / 2.0, canvas.bottom() - h - 10.0), vec2(w, h));
+    let bar = bar_rect(canvas);
+    let h = bar.height();
     let p = ui.painter_at(canvas);
     history(app, ui, canvas, bar);
     // History lines above the bar (the expanded window replaces them).
@@ -427,11 +426,22 @@ pub fn show(app: &mut CadApp, ui: &mut egui::Ui, canvas: Rect) {
             p.text(pos2(hr.left() + 8.0, hr.top() + 1.0 + lh * i as f32), egui::Align2::LEFT_TOP, l, crate::theme::small(), t.text_dim);
         }
     }
-    p.rect_filled(bar, 3.0, t.cmd_bg);
-    p.rect_stroke(bar, 3.0, Stroke::new(1.0, t.cmd_border), egui::StrokeKind::Inside);
+    // As in the reference program: a dark handle with the close and customize buttons, then a
+    // light grey field where the prompt and the typing read dark.
+    let list_t = t;
+    let t = field_tokens(t);
+    let handle = Rect::from_min_max(bar.min, pos2(bar.left() + HANDLE_W, bar.bottom()));
+    let field = Rect::from_min_max(pos2(handle.right(), bar.top()), bar.max);
+    p.rect_filled(handle, egui::CornerRadius { nw: 2, sw: 2, ne: 0, se: 0 }, Color32::from_rgb(0x2a, 0x2e, 0x36));
+    for dx in [3.0, 6.0] {
+        p.vline(handle.left() + dx, handle.top() + 6.0..=handle.bottom() - 6.0, Stroke::new(1.0, Color32::from_gray(0x80)));
+    }
+    crate::icons::paint(&p, Rect::from_center_size(pos2(handle.left() + 18.0, handle.center().y), vec2(10.0, 10.0)), crate::icons::Icon::Close, false);
+    crate::icons::paint(&p, Rect::from_center_size(pos2(handle.left() + 34.0, handle.center().y), vec2(13.0, 13.0)), crate::icons::Icon::Gear, false);
+    p.rect_filled(field, egui::CornerRadius { nw: 0, sw: 0, ne: 2, se: 2 }, FIELD_BG);
     // Prompt glyph.
-    p.text(pos2(bar.left() + 8.0, bar.center().y), egui::Align2::LEFT_CENTER, ">_", crate::theme::mono(), t.text_dim);
-    let mut x = bar.left() + 30.0;
+    p.text(pos2(field.left() + 6.0, bar.center().y), egui::Align2::LEFT_CENTER, ">_", crate::theme::mono(), Color32::from_gray(0x50));
+    let mut x = field.left() + 28.0;
     let prompt = app.session.current_prompt();
     let font = crate::theme::body();
     match &prompt {
@@ -522,6 +532,7 @@ pub fn show(app: &mut CadApp, ui: &mut egui::Ui, canvas: Rect) {
         false,
     );
     // AutoComplete list.
+    let t = list_t;
     if !app.session.prompting() {
         let sug = suggestions(&app.cmd.buffer);
         if !sug.is_empty() {
@@ -556,6 +567,29 @@ pub fn show(app: &mut CadApp, ui: &mut egui::Ui, canvas: Rect) {
             }
         }
     }
+}
+
+/// Where the command line bar sits in the drawing area `canvas`: as in the reference program,
+/// about half the drawing area wide, 26 px tall, centred near the bottom.
+fn bar_rect(canvas: Rect) -> Rect {
+    let w = (canvas.width() * 0.51).clamp(360.0, 1200.0).min((canvas.width() - 8.0).max(0.0));
+    let h = 26.0;
+    Rect::from_min_size(pos2(canvas.center().x - w / 2.0, canvas.bottom() - h - 10.0), vec2(w, h))
+}
+
+/// Width of the command line's dark handle (grip, close, customize).
+const HANDLE_W: f32 = 44.0;
+/// The command line's light grey field, as in the reference program's dark theme.
+const FIELD_BG: Color32 = Color32::from_rgb(0xb4, 0xb4, 0xb4);
+
+/// The colours used on the light field: dark text, blue options.
+fn field_tokens(mut t: Tokens) -> Tokens {
+    t.text = Color32::from_gray(0x10);
+    t.text_dim = Color32::from_gray(0x30);
+    t.text_faint = Color32::from_gray(0x5a);
+    t.cmd_keyword = Color32::from_rgb(0x0b, 0x4f, 0xa8);
+    t.cmd_keyword_hover = Color32::from_rgb(0xd4, 0xe4, 0xf7);
+    t
 }
 
 /// The command line's areas, laid out like [`show`] draws them.
@@ -671,8 +705,7 @@ mod tests {
             app.session.echo(format!("line {i}"));
         }
         let canvas = Rect::from_min_size(Pos2::ZERO, vec2(300.0, 180.0));
-        let w = (canvas.width() * 0.48).clamp(360.0, 760.0).min((canvas.width() - 8.0).max(0.0));
-        let bar = Rect::from_min_size(pos2(canvas.center().x - w / 2.0, canvas.bottom() - 34.0), vec2(w, 24.0));
+        let bar = bar_rect(canvas);
         let z = zones(&app, canvas, bar);
         assert!(canvas.contains_rect(bar));
         assert!(canvas.contains_rect(z.chevron));
@@ -705,8 +738,7 @@ mod tests {
         frame(&mut app, &ctx, Vec::new());
         frame(&mut app, &ctx, Vec::new());
         let canvas = app.canvas.rect.unwrap_or(Rect::NOTHING);
-        let w = (canvas.width() * 0.48).clamp(360.0, 760.0).min((canvas.width() - 8.0).max(0.0));
-        let bar = Rect::from_min_size(pos2(canvas.center().x - w / 2.0, canvas.bottom() - 34.0), vec2(w, 24.0));
+        let bar = bar_rect(canvas);
         let z = zones(&app, canvas, bar);
         let Some(lines) = z.lines else { panic!("three history lines show by default") };
         // A click on the history lines opens the history window, and doesn't start a selection.
