@@ -196,6 +196,43 @@ fn app_icon() -> Option<egui::IconData> {
     eframe::icon_data::from_png_bytes(APP_ICON_PNG).map_err(|e| log::warn!("app icon: {e}")).ok()
 }
 
+/// The app icon reduced to `n` × `n` pixels (box filter) for the title bar.
+fn title_icon_image(n: usize) -> Option<egui::ColorImage> {
+    let icon = app_icon()?;
+    let (w, h) = (icon.width as usize, icon.height as usize);
+    if w == 0 || h == 0 || n == 0 {
+        return None;
+    }
+    let mut out = vec![0u8; n * n * 4];
+    for oy in 0..n {
+        for ox in 0..n {
+            let (x0, y0) = (ox * w / n, oy * h / n);
+            let (x1, y1) = (((ox + 1) * w / n).clamp(x0 + 1, w), ((oy + 1) * h / n).clamp(y0 + 1, h));
+            let mut acc = [0u32; 4];
+            let mut count = 0u32;
+            for y in y0..y1 {
+                for x in x0..x1 {
+                    let i = (y * w + x) * 4;
+                    if let Some(px) = icon.rgba.get(i..i + 4) {
+                        for (a, v) in acc.iter_mut().zip(px) {
+                            *a += u32::from(*v);
+                        }
+                        count += 1;
+                    }
+                }
+            }
+            if count > 0
+                && let Some(dst) = out.get_mut((oy * n + ox) * 4..(oy * n + ox) * 4 + 4)
+            {
+                for (d, a) in dst.iter_mut().zip(acc) {
+                    *d = (a / count) as u8;
+                }
+            }
+        }
+    }
+    Some(egui::ColorImage::from_rgba_unmultiplied([n, n], &out))
+}
+
 fn version_string() -> String {
     let sha = option_env!("CADCRAFT_BUILD_SHA").unwrap_or("dev");
     format!("cadcraft {} ({sha})", env!("CARGO_PKG_VERSION"))
@@ -282,6 +319,12 @@ fn main() -> eframe::Result {
     if let Some(icon) = app_icon() {
         options.viewport = options.viewport.with_icon(icon);
     }
+    // Italian edition on Windows: CADCraft draws its own title bar with the quick access tools and
+    // the search box, as the reference program does (CADCRAFT_NATIVE_TITLEBAR=1 keeps the system one).
+    let own_titlebar = cfg!(target_os = "windows") && std::env::var_os("CADCRAFT_NATIVE_TITLEBAR").is_none();
+    if own_titlebar {
+        options.viewport = options.viewport.with_decorations(false);
+    }
     // Before eframe creates the wgpu instance: default Windows to DirectX 12 with FXC (see graphics.rs).
     #[cfg(target_os = "windows")]
     graphics::configure(&mut options, eframe::wgpu::Backends::from_env(), eframe::wgpu::Dx12Compiler::from_env());
@@ -344,6 +387,10 @@ fn main() -> eframe::Result {
                 app.session.set_lisp_support_dir(Some(support));
             }
             app.integrated_titlebar = cfg!(target_os = "macos");
+            app.windows_titlebar = own_titlebar;
+            if own_titlebar {
+                app.title_icon = title_icon_image(40);
+            }
             if surface.present_mode == eframe::wgpu::PresentMode::AutoNoVsync {
                 app.frame_cap = Some(cadcraft_ui_egui::gpu::FrameCap::new(240));
             }

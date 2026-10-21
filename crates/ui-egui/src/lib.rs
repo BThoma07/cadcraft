@@ -225,6 +225,13 @@ pub struct CadApp {
     /// Drawings being read on worker threads ([`opening`]).
     pub opening: opening::Opening,
     pub integrated_titlebar: bool,
+    /// The window has no system frame: CADCraft draws the title bar ([`chrome::titlebar`]).
+    pub windows_titlebar: bool,
+    /// The app icon for that title bar (made into a texture on the first frame).
+    pub title_icon: Option<egui::ColorImage>,
+    title_icon_tex: Option<egui::TextureHandle>,
+    /// The title bar's search box.
+    pub title_search: String,
     control_rx: Option<Receiver<ControlRequest>>,
     pending_shots: Vec<(u64, Option<String>, std::sync::mpsc::Sender<Value>, f64)>,
     queued_shots: Vec<(u64, f64, u32)>,
@@ -286,6 +293,10 @@ impl CadApp {
             status: None,
             opening: opening::Opening::default(),
             integrated_titlebar: false,
+            windows_titlebar: false,
+            title_icon: None,
+            title_icon_tex: None,
+            title_search: String::new(),
             control_rx: None,
             pending_shots: Vec::new(),
             queued_shots: Vec::new(),
@@ -710,7 +721,11 @@ impl CadApp {
         self.last_frame_start = t0;
         control::begin_frame(ui.ctx());
         let t = theme::Tokens::get();
-        // As in the Windows edition of the reference program: the menu bar, then the ribbon.
+        // As in the Windows edition of the reference program: the title bar, the menu bar, then the
+        // ribbon.
+        if self.windows_titlebar {
+            chrome::titlebar::show(self, ui);
+        }
         if self.ui.in_window_menu {
             menus::menu_bar(self, ui);
         }
@@ -740,6 +755,9 @@ impl CadApp {
         closing::prompt(self, ui.ctx());
         autosave::show(self, ui.ctx());
         autosave::gpu_notice(self, ui.ctx());
+        if self.windows_titlebar {
+            chrome::titlebar::resize_edges(ui.ctx());
+        }
         self.frame_ms = now_ms() - t0;
         if self.frame_log.len() >= 240 {
             self.frame_log.pop_front();

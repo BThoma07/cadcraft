@@ -15,6 +15,7 @@ fn harness(tab: &str) -> Harness<'static, CadApp> {
     app.ui.start_tab = false;
     app.apply_autocad_edition();
     app.ui.in_window_menu = true;
+    app.windows_titlebar = true;
     app.ui.ribbon_tab = tab.into();
     for c in ["rectang 0,0 400,250", "circle 200,125 80", "line 0,0 400,250 ", "pline 50,50 350,50 350,200 "] {
         let _ = app.session.cmdline(c);

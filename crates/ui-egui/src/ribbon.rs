@@ -294,7 +294,7 @@ const TABS: &[Tab] = &[
 ];
 
 /// The quick access tools at the start of the tab row.
-const QUICK: &[Btn] = &[
+pub(crate) const QUICK: &[Btn] = &[
     (Icon::New, "new", "Nuovo"),
     (Icon::Open, "open", "Apri"),
     (Icon::Save, "qsave", "Salva"),
@@ -529,8 +529,9 @@ fn tab_row(app: &mut CadApp, ui: &mut egui::Ui, row: Rect, action: &mut Option<A
     let t = Tokens::get();
     let p = ui.painter().clone();
     let mut x = row.left() + 6.0;
-    // Quick access tools.
-    for (icon, cmd, label) in QUICK {
+    // Quick access tools (in the window's own title bar when it has one).
+    let quick = if app.windows_titlebar { &[][..] } else { QUICK };
+    for (icon, cmd, label) in quick {
         let br = Rect::from_min_size(pos2(x, row.top() + 2.0), vec2(16.0, 16.0));
         let resp = ui.interact(br, ui.id().with(("rb_quick", *cmd)), Sense::click());
         if resp.hovered() {
@@ -543,7 +544,9 @@ fn tab_row(app: &mut CadApp, ui: &mut egui::Ui, row: Rect, action: &mut Option<A
         }
         x += 20.0;
     }
-    x += 14.0;
+    if !quick.is_empty() {
+        x += 14.0;
+    }
     for tab in TABS {
         let galley = p.layout_no_wrap(tab.title.to_string(), ribbon_font(), t.text);
         let tr = Rect::from_min_size(pos2(x, row.top() + 2.0), vec2(galley.size().x + 18.0, row.height() - 2.0));

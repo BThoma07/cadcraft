@@ -8,6 +8,7 @@ use crate::icons::{self, Icon};
 use crate::theme::Tokens;
 
 pub mod annoscale;
+pub mod titlebar;
 
 const TOOLBAR: &[&[(Icon, &str, &str, Option<&str>)]] = &[
     &[
