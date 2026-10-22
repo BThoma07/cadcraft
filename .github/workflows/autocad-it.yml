@@ -59,6 +59,25 @@ jobs:
           name: schermate
           path: schermate/*.png
           if-no-files-found: warn
+      # The screenshots on their own branch too, so they can be fetched with git alone
+      # (pushed with the checkout's own credentials).
+      - name: Schermate sul ramo schermate-ci
+        if: always()
+        continue-on-error: true
+        shell: bash
+        run: |
+          [ -d schermate ] || exit 0
+          tmp=$(mktemp -d)
+          cp schermate/*.png "$tmp"/ 2>/dev/null || true
+          cp velocita.log "$tmp"/ 2>/dev/null || true
+          git checkout -q --orphan schermate-ci
+          git rm -r -q --cached . >/dev/null
+          git clean -fdq -e target
+          cp "$tmp"/* .
+          git add -f *.png velocita.log 2>/dev/null || git add -f *.png
+          git -c user.name=ci -c user.email=ci@users.noreply.github.com commit -qm "Schermate di ${GITHUB_SHA}"
+          git push -q -f origin schermate-ci || true
+          git checkout -q -f "$GITHUB_SHA"
 
   windows:
     name: Installatore Windows

@@ -10,6 +10,11 @@ use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
 
 fn harness(tab: &str) -> Harness<'static, CadApp> {
+    harness_sized(tab, vec2(1600.0, 900.0))
+}
+
+/// The window at `size` points (1 pixel per point).
+fn harness_sized(tab: &str, size: egui::Vec2) -> Harness<'static, CadApp> {
     let mut app = CadApp::new(Session::default(), Services::default());
     app.run("new", serde_json::json!({})).unwrap();
     app.ui.start_tab = false;
@@ -21,7 +26,7 @@ fn harness(tab: &str) -> Harness<'static, CadApp> {
         let _ = app.session.cmdline(c);
     }
     let _ = app.run("zoom.extents", serde_json::json!({}));
-    let mut h = Harness::builder().with_size(vec2(1600.0, 900.0)).with_pixels_per_point(1.0).build_ui_state(
+    let mut h = Harness::builder().with_size(size).with_pixels_per_point(1.0).build_ui_state(
         |ui, app: &mut CadApp| {
             app.logic(&ui.ctx().clone());
             app.ui(ui);
@@ -60,6 +65,11 @@ fn la_finestra_e_come_autocad() {
                 h.render().unwrap().save(format!("{dir}/autocad-it-proprieta-{name}.png")).unwrap();
             }
         }
+    }
+    // The whole window at the size of the reference screen (2560 x 1440), to set beside it.
+    if let Ok(dir) = std::env::var("CRAFT_UI_VISUAL_DIR") {
+        let mut h = harness_sized("home", vec2(2560.0, 1440.0));
+        h.render().unwrap().save(format!("{dir}/autocad-it-schermo-2560.png")).unwrap();
     }
     let h = harness("home");
     for label in ["Linea", "Polilinea", "Cerchio", "Sposta", "Taglia", "Testo", "Quota", "Inserisci"] {

@@ -392,7 +392,11 @@ fn main() -> eframe::Result {
                 app.title_icon = title_icon_image(40);
             }
             if surface.present_mode == eframe::wgpu::PresentMode::AutoNoVsync {
-                app.frame_cap = Some(cadcraft_ui_egui::gpu::FrameCap::new(240));
+                // The cap waits after the frame's input was read, so its wait is input age. On
+                // Windows DX12 paces frames itself (one frame of latency at most): a 1 ms cap only
+                // stops a 1000 Hz mouse from drawing frames nobody can see.
+                let max_fps = if cfg!(windows) { 1000 } else { 240 };
+                app.frame_cap = Some(cadcraft_ui_egui::gpu::FrameCap::new(max_fps));
             }
             if let Some(rs) = &cc.wgpu_render_state {
                 app.set_wgpu(rs, eframe::egui_wgpu::depth_format_from_bits(0, STENCIL_BITS));
