@@ -1,0 +1,206 @@
+   Compiling proc-macro2 v1.0.107
+   Compiling quote v1.0.47
+   Compiling unicode-ident v1.0.26
+   Compiling cfg-if v1.0.5
+   Compiling autocfg v1.5.1
+   Compiling libm v0.2.16
+   Compiling once_cell v1.21.4
+   Compiling num-traits v0.2.19
+   Compiling thiserror v2.0.21
+   Compiling arrayvec v0.7.8
+   Compiling bitflags v2.13.2
+   Compiling syn v3.0.6
+   Compiling foldhash v0.2.0
+   Compiling smallvec v1.16.2
+   Compiling log v0.4.34
+   Compiling libc v0.2.190
+   Compiling cfg_aliases v0.2.2
+   Compiling serde_core v1.0.229
+   Compiling hashbrown v0.17.1
+   Compiling syn v2.0.119
+   Compiling equivalent v1.0.2
+   Compiling zerocopy v0.8.61
+   Compiling scopeguard v1.2.0
+   Compiling euclid v0.22.14
+   Compiling bytemuck_derive v1.12.1
+   Compiling thiserror-impl v2.0.21
+   Compiling bytemuck v1.25.2
+   Compiling font-types v0.12.6
+   Compiling zmij v1.0.23
+   Compiling simd-adler32 v0.3.10
+   Compiling parking_lot_core v0.9.12
+   Compiling libloading v0.8.9
+   Compiling serde v1.0.229
+   Compiling adler2 v2.0.1
+   Compiling unicode-width v0.2.2
+   Compiling crc32fast v1.5.2
+   Compiling read-fonts v0.41.0
+   Compiling serde_derive v1.0.229
+   Compiling lock_api v0.4.14
+   Compiling indexmap v2.14.2
+   Compiling zerocopy-derive v0.8.61
+   Compiling serde_json v1.0.151
+   Compiling allocator-api2 v0.2.21
+   Compiling crossbeam-utils v0.8.23
+   Compiling rustc-hash v1.1.0
+   Compiling naga-types v30.0.1
+   Compiling hashbrown v0.16.1
+   Compiling parking_lot v0.12.5
+   Compiling miniz_oxide v0.9.1
+   Compiling naga v30.0.1
+   Compiling polycool v0.4.0
+   Compiling ash v0.38.0+1.3.281
+   Compiling crossbeam-epoch v0.9.21
+   Compiling profiling v1.0.18
+   Compiling bit-vec v0.9.1
+   Compiling pkg-config v0.3.34
+   Compiling bit-set v0.10.0
+   Compiling flate2 v1.1.10
+   Compiling wayland-sys v0.31.11
+   Compiling kurbo v0.13.1
+   Compiling codespan-reporting v0.13.1
+   Compiling half v2.7.1
+   Compiling miniz_oxide v0.8.9
+   Compiling fdeflate v0.3.7
+   Compiling color v0.3.3
+   Compiling spirv v0.4.0+sdk-1.4.341.0
+   Compiling static_assertions v1.1.0
+   Compiling khronos-egl v6.0.0
+   Compiling raw-window-handle v0.6.2
+   Compiling linebender_resource_handle v0.1.1
+   Compiling version_check v0.9.5
+   Compiling harfrust v0.12.0
+   Compiling either v1.19.0
+   Compiling crossbeam-deque v0.8.8
+   Compiling ahash v0.8.12
+   Compiling wgpu-types v30.0.1
+   Compiling peniko v0.6.1
+   Compiling dlib v0.5.3
+   Compiling guillotiere v0.7.0
+   Compiling wgpu-hal v30.0.1
+   Compiling rayon-core v1.13.0
+   Compiling fearless_simd v0.4.1
+   Compiling presser v0.3.1
+   Compiling rustversion v1.0.23
+   Compiling unicode-general-category v1.1.0
+   Compiling vello_common v0.1.0
+   Compiling emath v0.36.2
+   Compiling ordered-float v5.5.0
+   Compiling uuid v1.27.0
+   Compiling wgpu-naga-bridge v30.0.1
+   Compiling glow v0.17.0
+   Compiling renderdoc-sys v1.1.0
+   Compiling vello_cpu v0.1.0
+   Compiling accesskit v0.24.1
+   Compiling gpu-allocator v0.28.0
+   Compiling ecolor v0.36.2
+   Compiling skrifa v0.44.0
+   Compiling cadcraft-geom v0.9.0 (/home/runner/work/cadcraft/cadcraft/crates/geom)
+   Compiling wgpu-core v30.0.1
+   Compiling self_cell v1.3.0
+   Compiling nohash-hasher v0.2.0
+   Compiling memchr v2.8.3
+   Compiling epaint_default_fonts v0.36.2
+   Compiling unicode-segmentation v1.13.3
+   Compiling itoa v1.0.18
+   Compiling litrs v1.0.0
+   Compiling epaint v0.36.2
+   Compiling document-features v0.2.12
+   Compiling wgpu-core-deps-windows-linux-android v30.0.1
+   Compiling encoding_rs v0.8.42
+   Compiling rayon v1.12.0
+   Compiling cadcraft-color v0.9.0 (/home/runner/work/cadcraft/cadcraft/crates/color)
+   Compiling read-fonts v0.44.0
+   Compiling lyon_geom v1.0.19
+   Compiling wgpu v30.0.1
+   Compiling heapless v0.8.0
+   Compiling winnow v1.0.4
+   Compiling strict-num v0.1.1
+   Compiling cadcraft-fonts v0.9.0 (/home/runner/work/cadcraft/cadcraft/crates/fonts)
+   Compiling arrayref v0.3.9
+   Compiling byteorder v1.5.0
+   Compiling zune-core v0.5.3
+   Compiling bitflags v1.3.2
+   Compiling pxfm v0.1.30
+   Compiling zune-jpeg v0.5.15
+   Compiling png v0.17.16
+   Compiling hash32 v0.3.1
+   Compiling tiny-skia-path v0.11.4
+   Compiling toml_parser v1.1.3+spec-1.1.0
+   Compiling lyon_path v1.0.19
+   Compiling moxcms v0.8.1
+   Compiling cadcraft-doc v0.9.0 (/home/runner/work/cadcraft/cadcraft/crates/doc)
+   Compiling skrifa v0.47.0
+   Compiling toml_datetime v1.1.1+spec-1.1.0
+   Compiling serde_spanned v1.1.1
+   Compiling itertools v0.15.0
+   Compiling png v0.18.1
+   Compiling toml_writer v1.1.2+spec-1.1.0
+   Compiling byteorder-lite v0.1.0
+   Compiling multiversion_no_op v1.0.0
+   Compiling rustc-hash v2.1.3
+   Compiling simdutf8 v0.1.5
+   Compiling unicode-bidi v0.3.18
+   Compiling stable_deref_trait v1.2.1
+   Compiling float_next_after v1.0.0
+   Compiling rustix v1.1.5
+   Compiling anyhow v1.0.104
+   Compiling core_detect v1.0.0
+   Compiling getrandom v0.4.3
+   Compiling lyon_tessellation v1.0.22
+   Compiling type-map v0.5.1
+   Compiling image v0.25.10
+   Compiling toml v1.1.6+spec-1.1.0
+   Compiling egui v0.36.2
+   Compiling tiny-skia v0.11.4
+   Compiling is-docker v0.2.0
+   Compiling web-time v1.1.0
+   Compiling linux-raw-sys v0.12.1
+   Compiling lazy_static v1.5.1
+   Compiling colored v2.2.0
+   Compiling egui-wgpu v0.36.2
+   Compiling is-wsl v0.4.0
+   Compiling cadcraft-render v0.9.0 (/home/runner/work/cadcraft/cadcraft/crates/render)
+   Compiling cadcraft-ui-egui v0.9.0 (/home/runner/work/cadcraft/cadcraft/crates/ui-egui)
+   Compiling rstar v0.12.2
+   Compiling cadcraft-dxf v0.9.0 (/home/runner/work/cadcraft/cadcraft/crates/dxf)
+   Compiling cadcraft-constraints v0.9.0 (/home/runner/work/cadcraft/cadcraft/crates/constraints)
+   Compiling accesskit_consumer v0.35.0
+   Compiling getopts v0.2.24
+   Compiling fastrand v2.5.0
+   Compiling craft-docpath v0.1.0 (https://github.com/storytold/craft-libs?rev=82a24b006eefa036b43c09a67fb9a3fbd17ffe63#82a24b00)
+   Compiling cadcraft-engine v0.9.0 (/home/runner/work/cadcraft/cadcraft/crates/engine)
+   Compiling tempfile v3.27.0
+   Compiling dify v0.8.0
+   Compiling kittest v0.4.0
+   Compiling open v5.4.4
+   Compiling craft-ui v0.1.0 (https://github.com/storytold/craft-libs?rev=5c874d51eeb3de70e735c8ce87a59a7dedd47675#5c874d51)
+   Compiling pollster v1.0.1
+   Compiling egui_kittest v0.36.2
+    Finished `release` profile [optimized] target(s) in 2m 22s
+     Running tests/velocita_disegno.rs (target/release/deps/velocita_disegno-30eb9a5a1be593e6)
+
+running 2 tests
+
+=== Tempo per fotogramma (mediana, ms), finestra 2560x1440 ===
+vuoto, nessun comando                      logic   0.00 | ui   0.28 (p95   0.33, max   0.45) | tessellate   0.11 (p95   0.13) | total   0.39 ms | 791 shapes, 14824 vertices
+test graphicsconfig_mostra_scheda_e_tempi ... ok
+vuoto, LINEA attiva                        logic   0.00 | ui   0.31 (p95   0.40, max   0.81) | tessellate   0.11 (p95   0.13) | total   0.42 ms | 812 shapes, 15526 vertices
+2000 linee, LINEA attiva                   logic   0.00 | ui   0.43 (p95   1.16, max   1.65) | tessellate   0.58 (p95   1.39) | total   1.01 ms | 2869 shapes, 32086 vertices
+2000 linee, LINEA, snap spenti             logic   0.00 | ui   0.38 (p95   0.49, max   1.28) | tessellate   0.37 (p95   0.58) | total   0.75 ms | 2863 shapes, 31950 vertices
+  senza Ribbon                             logic   0.00 | ui   0.19 (p95   0.26, max   0.41) | tessellate   0.06 (p95   0.06) | total   0.24 ms | 428 shapes, 8240 vertices
+                                           risparmio   0.18 ms
+  senza palette (Proprieta')               logic   0.00 | ui   0.22 (p95   0.32, max   0.61) | tessellate   0.09 (p95   0.10) | total   0.31 ms | 679 shapes, 12550 vertices
+                                           risparmio   0.11 ms
+  senza barra di stato                     logic   0.00 | ui   0.26 (p95   0.29, max   0.59) | tessellate   0.09 (p95   0.11) | total   0.36 ms | 703 shapes, 13964 vertices
+                                           risparmio   0.06 ms
+  senza riga di comando                    logic   0.00 | ui   0.29 (p95   0.39, max   0.71) | tessellate   0.10 (p95   0.12) | total   0.40 ms | 785 shapes, 14978 vertices
+                                           risparmio   0.02 ms
+  senza ViewCube e UCS                     logic   0.00 | ui   0.29 (p95   0.37, max   0.57) | tessellate   0.10 (p95   0.11) | total   0.39 ms | 790 shapes, 14154 vertices
+                                           risparmio   0.03 ms
+  senza schede dei file                    logic   0.00 | ui   0.29 (p95   0.36, max   0.57) | tessellate   0.11 (p95   0.12) | total   0.40 ms | 794 shapes, 15318 vertices
+                                           risparmio   0.02 ms
+test tempo_per_fotogramma_mentre_si_disegna ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.95s
+
