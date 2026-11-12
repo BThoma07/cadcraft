@@ -35,7 +35,7 @@ jobs:
         run: |
           set -o pipefail
           rc=0
-          for t in "-p cadcraft-engine --lib italiano" "-p cadcraft-engine --test aliases" "-p cadcraft-ui-egui --test autocad_edition" "-p cadcraft-ui-egui --test alias_dialog" "-p cadcraft-ui-egui --lib ribbon" "-p cadcraft-ui-egui --lib cmdline"; do
+          for t in "-p cadcraft-engine --lib italiano" "-p cadcraft-engine --lib proprieta" "-p cadcraft-engine --test aliases" "-p cadcraft-ui-egui --test autocad_edition" "-p cadcraft-ui-egui --test alias_dialog" "-p cadcraft-ui-egui --lib ribbon" "-p cadcraft-ui-egui --lib cmdline"; do
             echo "=== cargo test $t"
             cargo test $t 2>&1 | tee -a prove.log || rc=1
           done

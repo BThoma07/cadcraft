@@ -301,6 +301,10 @@ fn run_set(s: &mut Session, p: &Value) -> Result<Value> {
                     if let Some(x) = num("widthFactor").filter(|x| *x > 0.0) {
                         t.width_factor = x;
                     }
+                    // Oblique angle (Inclinazione): within ±85 degrees, as the text style allows.
+                    if let Some(x) = num("obliqueAngle").filter(|x| x.abs() <= 85.0) {
+                        t.oblique = x.to_radians();
+                    }
                     // The position is the point the text is placed by: moving it moves the text.
                     if let Some(to) = p.get("position").and_then(point_value) {
                         let d = to - t.justify_point();
@@ -327,6 +331,9 @@ fn run_set(s: &mut Session, p: &Value) -> Result<Value> {
                 EntityKind::LwPolyline(pl) => {
                     if let Some(x) = num("width").filter(|x| *x >= 0.0) {
                         pl.const_width = x;
+                    }
+                    if let Some(x) = num("elevation").filter(|x| x.abs() < 1e15) {
+                        pl.elevation = x;
                     }
                     if let Some(c) = p.get("closed").and_then(Value::as_bool) {
                         pl.closed = c;
@@ -382,6 +389,59 @@ fn run_set(s: &mut Session, p: &Value) -> Result<Value> {
                     if !dim_over.is_empty() {
                         dm.overrides.extend(dim_over.clone());
                         dm.block = None;
+                    }
+                }
+                // The Italian edition's Properties palette: the remaining editable rows.
+                EntityKind::Point(pt) => {
+                    if let Some(v) = p.get("position") {
+                        set_xy(&mut pt.p, v);
+                    }
+                }
+                EntityKind::Ray(r) | EntityKind::XLine(r) => {
+                    if let Some(v) = p.get("basePoint") {
+                        set_xy(&mut r.base, v);
+                    }
+                }
+                EntityKind::Ellipse(el) => {
+                    if let Some(v) = p.get("center") {
+                        set_xy(&mut el.center, v);
+                    }
+                    // Major radius scales the major axis; the minor radius keeps it no longer
+                    // than the major one (the ratio stays within 0..1).
+                    let major = el.major.xy().len();
+                    if let Some(r) = num("majorRadius").filter(|r| *r > 0.0 && *r < 1e15)
+                        && major > 0.0
+                        && r * el.ratio > 0.0
+                    {
+                        let k = r / major;
+                        el.major.x *= k;
+                        el.major.y *= k;
+                        el.major.z *= k;
+                    }
+                    let major = el.major.xy().len();
+                    if let Some(r) = num("minorRadius").filter(|r| *r > 0.0 && *r <= major) {
+                        el.ratio = r / major;
+                    }
+                }
+                EntityKind::Viewport(vp) => {
+                    if let Some(on) = p.get("on").and_then(Value::as_bool) {
+                        vp.on = on;
+                    }
+                    if let Some(l) = p.get("locked").and_then(Value::as_bool) {
+                        vp.locked = l;
+                    }
+                    // Custom scale: paper units per model unit; the viewport shows its height of
+                    // paper as that much model space about the same centre.
+                    if let Some(k) = num("customScale").filter(|k| *k > 1e-9 && *k < 1e9) {
+                        let h = vp.height / k;
+                        if h.is_finite() && h > 0.0 {
+                            vp.view_height = h;
+                        }
+                    }
+                }
+                EntityKind::MLeader(m) => {
+                    if let Some(x) = num("arrowSize").filter(|x| *x >= 0.0) {
+                        m.arrow_size = x;
                     }
                 }
                 EntityKind::Hatch(h) => {
@@ -890,6 +950,20 @@ fn dim_overrides(p: &Value) -> Result<serde_json::Map<String, Value>> {
         let n = v.as_u64().filter(|n| *n <= 8).ok_or_else(|| bad("properties.set", "`precision` must be 0 to 8 decimal places"))?;
         o.insert("decimals".into(), json!(n));
     }
+    // Any other dimension style field (the palette's Alternate Units and Tolerances rows), by
+    // field or DIM* variable name, checked against a scratch style.
+    if let Some(extra) = p.get("dimOverride").and_then(Value::as_object) {
+        let mut scratch = cadcraft_doc::DimStyle::default();
+        let rejected = scratch.apply_fields(extra);
+        if !rejected.is_empty() {
+            return Err(bad("properties.set", format!("unusable dimension values: {}", rejected.join(", "))));
+        }
+        for (k, v) in extra {
+            if let Some(f) = cadcraft_doc::DimStyle::field_name(k).filter(|f| *f != "name") {
+                o.insert(f.to_string(), v.clone());
+            }
+        }
+    }
     Ok(o)
 }
 
@@ -1100,6 +1174,65 @@ mod tests {
         for ok in ["ByBlock", "ByLayer"] {
             s.execute("properties.set", &json!({ "handles": [h], "linetype": ok })).unwrap();
             assert_eq!(lt(&s), ok);
+        }
+    }
+
+    fn last(s: &Session) -> String {
+        s.doc().unwrap().model.last().unwrap().handle.hex()
+    }
+
+    /// The Italian edition's Properties palette edits points, rays, ellipses, multileaders and
+    /// the alternate units and tolerances of dimensions.
+    #[test]
+    fn proprieta_modificabili_come_autocad() {
+        use cadcraft_doc::EntityKind;
+        let mut s = Session::new();
+        s.execute("point", &json!({ "at": [1, 1] })).unwrap();
+        let h = last(&s);
+        s.execute("properties.set", &json!({ "handles": [h], "position": [5, 6] })).unwrap();
+        match &s.doc().unwrap().model.last().unwrap().kind {
+            EntityKind::Point(p) => assert_eq!((p.p.x, p.p.y), (5.0, 6.0)),
+            k => panic!("{k:?}"),
+        }
+        s.execute("ray", &json!({ "base": [0, 0], "through": [1, 0] })).unwrap();
+        let h = last(&s);
+        s.execute("properties.set", &json!({ "handles": [h], "basePoint": [2, 3] })).unwrap();
+        match &s.doc().unwrap().model.last().unwrap().kind {
+            EntityKind::Ray(r) => assert_eq!((r.base.x, r.base.y, r.dir.x), (2.0, 3.0, 1.0)),
+            k => panic!("{k:?}"),
+        }
+        s.execute("dimlinear", &json!({ "p1": [0, 0], "p2": [10, 0], "at": [5, 2] })).unwrap();
+        let h = last(&s);
+        s.execute("properties.set", &json!({ "handles": [h], "dimOverride": { "alt": true, "altDecimals": 3, "tolerance": true, "tolPlus": 0.1 } }))
+            .unwrap();
+        match &s.doc().unwrap().model.last().unwrap().kind {
+            EntityKind::Dimension(d) => {
+                assert_eq!(d.overrides.get("alt"), Some(&json!(true)));
+                assert_eq!(d.overrides.get("altDecimals"), Some(&json!(3)));
+                assert_eq!(d.overrides.get("tolPlus"), Some(&json!(0.1)));
+            }
+            k => panic!("{k:?}"),
+        }
+        // Unusable values are refused, not stored.
+        assert!(s.execute("properties.set", &json!({ "handles": [h], "dimOverride": { "tolScale": -1 } })).is_err());
+        assert!(s.execute("properties.set", &json!({ "handles": [h], "dimOverride": { "nonEsiste": 1 } })).is_err());
+    }
+
+    /// Hostile values typed into the palette never panic and never store a broken shape.
+    #[test]
+    fn proprieta_valori_ostili_non_rompono() {
+        use cadcraft_doc::EntityKind;
+        let mut s = Session::new();
+        s.cmdline("ellipse 0,0 10,0 5").ok();
+        let Some(e) = s.doc().unwrap().model.last().map(|e| e.handle.hex()) else { return };
+        for v in [json!(f64::MAX), json!(-1), json!(0), json!(1e300), json!("x"), json!(null)] {
+            let _ = s.execute(
+                "properties.set",
+                &json!({ "handles": [e], "majorRadius": v, "minorRadius": v, "customScale": v, "obliqueAngle": v, "elevation": v }),
+            );
+        }
+        if let EntityKind::Ellipse(el) = &s.doc().unwrap().model.last().unwrap().kind {
+            assert!(el.ratio > 0.0 && el.ratio <= 1.0 && el.major.x.is_finite());
         }
     }
 }

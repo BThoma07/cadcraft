@@ -1333,3 +1333,61 @@ menu	Help	?
 	Bottom left	In basso a sinistra
 	Bottom center	In basso al centro
 	Bottom right	In basso a destra
+	Basepoint X	X punto base
+	Basepoint Y	Y punto base
+	Basepoint Z	Z punto base
+	Second point X	X secondo punto
+	Second point Y	Y secondo punto
+	Second point Z	Z secondo punto
+	Direction vector X	X vettore direzione
+	Direction vector Y	Y vettore direzione
+	Direction vector Z	Z vettore direzione
+	Method	Metodo
+	CV	CV
+	Number of control vertices	Numero vertici di controllo
+	Number of fit points	Numero punti di adattamento
+	Periodic	Periodica
+	Planar	Planare
+	Leader type	Tipo di direttrice
+	Straight	Retta
+	Arrowhead	Freccia
+	Vertices	Vertici
+	Leaders	Direttrici
+	Arrowhead size	Dimensione freccia direttrice
+	Landing distance	Lunghezza approdo
+	Rows	Righe
+	Columns	Colonne
+	Table width	Larghezza tabella
+	Table height	Altezza tabella
+	Clipped	Ritagliata
+	Display locked	Visualizzazione bloccata
+	Custom scale	Scala personalizzata
+	Perimeter	Perimetro
+	Alternate Units	Unità alternative
+	Alt enabled	Unità alternative attive
+	Alt format	Formato unità alternative
+	Scientific	Scientifico
+	Decimal	Decimale
+	Engineering	Ingegneristico
+	Architectural stacked	Architettonico impilato
+	Fractional stacked	Frazionario impilato
+	Architectural	Architettonico
+	Fractional	Frazionario
+	Windows Desktop	Desktop di Windows
+	Alt precision	Precisione alternative
+	Alt round	Arrotondamento alternative
+	Alt scale factor	Fattore unità alternative
+	Alt suffix	Suffisso alternative
+	Tolerances	Tolleranze
+	Tolerance display	Visualizzazione tolleranza
+	Symmetrical	Simmetrica
+	Deviation	Deviazione
+	Limits	Limiti
+	Tolerance limit upper	Limite superiore tolleranza
+	Tolerance limit lower	Limite inferiore tolleranza
+	Tolerance precision	Precisione tolleranza
+	Tolerance text height	Altezza testo tolleranza
+	Tolerance pos vert	Posizione verticale tolleranza
+	Bottom	In basso
+	Middle	Al centro
+	Top	In alto

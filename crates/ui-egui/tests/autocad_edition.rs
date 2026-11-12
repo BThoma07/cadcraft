@@ -87,3 +87,41 @@ fn comandi_italiani_e_alias() {
     s.cmdline("_circle 10,0 5").unwrap();
     assert_eq!(s.doc().unwrap().model.iter().count(), 2);
 }
+
+/// The Properties palette of the remaining object types (point, ray, xline, spline, dimension
+/// with Alternate Units and Tolerances, multileader, table, region): each one shows without
+/// panicking, and with CRAFT_UI_VISUAL_DIR set is saved to look at.
+#[test]
+fn proprieta_di_tutti_i_tipi() {
+    use serde_json::json;
+    let make: [(&str, &str, serde_json::Value); 8] = [
+        ("punto", "point", json!({ "at": [10, 10] })),
+        ("raggio", "ray", json!({ "base": [0, 0], "through": [10, 5] })),
+        ("xlinea", "xline", json!({ "base": [0, 0], "angle": 30 })),
+        ("spline", "spline", json!({ "fit": [[0, 0], [50, 40], [100, 0], [150, 30]] })),
+        ("quota", "dimlinear", json!({ "p1": [0, 0], "p2": [100, 0], "at": [50, -20] })),
+        ("multidirettrice", "mleader", json!({ "points": [[0, 0], [40, 30]], "text": "Nota" })),
+        ("tabella", "table", json!({ "at": [0, 0], "rows": 3, "cols": 3 })),
+        ("regione", "rectang", json!({ "p1": [0, 0], "p2": [40, 20] })),
+    ];
+    for (name, cmd, params) in make {
+        let mut h = harness("home");
+        let Ok(r) = h.state_mut().run(cmd, params) else { continue };
+        let mut handle = r["handle"].as_str().or_else(|| r["handles"][0].as_str()).map(str::to_string);
+        if name == "regione" {
+            if let Some(hd) = &handle {
+                let _ = h.state_mut().run("region", json!({ "handles": [hd] }));
+            }
+        }
+        if handle.is_none() {
+            handle = h.state().session.doc().ok().and_then(|d| d.model.last().map(|e| e.handle.hex()));
+        }
+        let Some(handle) = handle else { continue };
+        h.state_mut().run("select", json!({ "handles": [handle] })).unwrap();
+        h.run_steps(4);
+        if let Ok(dir) = std::env::var("CRAFT_UI_VISUAL_DIR") {
+            std::fs::create_dir_all(&dir).unwrap();
+            h.render().unwrap().save(format!("{dir}/autocad-it-proprieta-{name}.png")).unwrap();
+        }
+    }
+}

@@ -699,6 +699,127 @@ fn custom_properties(ui: &egui::Ui, app: &CadApp, h: cadcraft_engine::doc::Handl
     c
 }
 
+/// A drop-down of translated `items` showing the one at `current`; returns the index picked.
+fn choice(ui: &mut egui::Ui, current: usize, items: &[&str]) -> Option<usize> {
+    let mut out = None;
+    let shown = items.get(current).copied().unwrap_or("");
+    ui.menu_button(crate::i18n::t(shown), |ui| {
+        for (i, it) in items.iter().enumerate() {
+            if ui.button(crate::i18n::t(it)).clicked() {
+                out = Some(i);
+                ui.close();
+            }
+        }
+    });
+    out
+}
+
+/// A Yes / No drop-down; returns the new value when one is picked.
+fn yes_no(ui: &mut egui::Ui, on: bool) -> Option<bool> {
+    choice(ui, if on { 0 } else { 1 }, &["Yes", "No"]).map(|i| i == 0)
+}
+
+/// `properties.set` overriding dimension style fields of the selected dimensions.
+fn dim_override(ids: &[String], fields: &[(&str, Value)]) -> Value {
+    let mut m = serde_json::Map::new();
+    for (k, v) in fields {
+        m.insert((*k).to_string(), v.clone());
+    }
+    json!({ "handles": ids, "dimOverride": Value::Object(m) })
+}
+
+/// The Alternate Units and Tolerances categories of a dimension, as the reference program's
+/// Properties palette shows them: each row overrides the style for the selected dimensions.
+fn dimension_alt_and_tolerances(
+    ui: &mut egui::Ui,
+    st: &cadcraft_doc::DimStyle,
+    ids: &[String],
+    len: &dyn Fn(f64) -> String,
+    set: &mut Option<Value>,
+    bad: &mut Option<String>,
+) {
+    let real = |v: f64| format!("{v:.4}");
+    prop_group(ui, "Alternate Units");
+    prop_row(ui, "Alt enabled", |ui| {
+        if let Some(on) = yes_no(ui, st.alt) {
+            *set = Some(dim_override(ids, &[("alt", json!(on))]));
+        }
+    });
+    const ALT_FORMATS: [&str; 8] =
+        ["Scientific", "Decimal", "Engineering", "Architectural stacked", "Fractional stacked", "Architectural", "Fractional", "Windows Desktop"];
+    prop_row(ui, "Alt format", |ui| {
+        if let Some(i) = choice(ui, usize::from(st.alt_unit.saturating_sub(1)), &ALT_FORMATS) {
+            *set = Some(dim_override(ids, &[("altUnit", json!(i + 1))]));
+        }
+    });
+    prop_row(ui, "Alt precision", |ui| {
+        let cur = st.alt_decimals.to_string();
+        if let Some(n) = pick_menu(ui, &cur, (0..=8).map(|n: u8| n.to_string())).and_then(|n| n.parse::<u8>().ok()) {
+            *set = Some(dim_override(ids, &[("altDecimals", json!(n))]));
+        }
+    });
+    prop_row(ui, "Alt round", |ui| {
+        if let Some(f) = number(edit_field(ui, ui.id().with(("altrnd", ids)), len(st.alt_round)), &mut *bad).filter(|f| *f >= 0.0) {
+            *set = Some(dim_override(ids, &[("altRound", json!(f))]));
+        }
+    });
+    prop_row(ui, "Alt scale factor", |ui| {
+        if let Some(f) = number(edit_field(ui, ui.id().with(("altf", ids)), real(st.alt_factor)), &mut *bad).filter(|f| *f > 0.0) {
+            *set = Some(dim_override(ids, &[("altFactor", json!(f))]));
+        }
+    });
+    prop_row(ui, "Alt suffix", |ui| {
+        if let Some(s) = edit_field(ui, ui.id().with(("altpost", ids)), st.alt_post.clone()) {
+            *set = Some(dim_override(ids, &[("altPost", json!(s))]));
+        }
+    });
+    prop_group(ui, "Tolerances");
+    // None, Symmetrical (equal plus and minus), Deviation, Limits.
+    let display = match (st.tolerance, st.limits) {
+        (true, _) if st.tol_plus == st.tol_minus => 1,
+        (true, _) => 2,
+        (false, true) => 3,
+        (false, false) => 0,
+    };
+    prop_row(ui, "Tolerance display", |ui| {
+        if let Some(i) = choice(ui, display, &["None", "Symmetrical", "Deviation", "Limits"]) {
+            let fields: Vec<(&str, Value)> = match i {
+                1 => vec![("tolerance", json!(true)), ("limits", json!(false)), ("tolMinus", json!(st.tol_plus))],
+                2 => vec![("tolerance", json!(true)), ("limits", json!(false))],
+                3 => vec![("tolerance", json!(false)), ("limits", json!(true))],
+                _ => vec![("tolerance", json!(false)), ("limits", json!(false))],
+            };
+            *set = Some(dim_override(ids, &fields));
+        }
+    });
+    prop_row(ui, "Tolerance limit upper", |ui| {
+        if let Some(f) = number(edit_field(ui, ui.id().with(("tolp", ids)), len(st.tol_plus)), &mut *bad) {
+            *set = Some(dim_override(ids, &[("tolPlus", json!(f))]));
+        }
+    });
+    prop_row(ui, "Tolerance limit lower", |ui| {
+        if let Some(f) = number(edit_field(ui, ui.id().with(("tolm", ids)), len(st.tol_minus)), &mut *bad) {
+            *set = Some(dim_override(ids, &[("tolMinus", json!(f))]));
+        }
+    });
+    prop_row(ui, "Tolerance precision", |ui| {
+        let cur = st.tol_decimals.to_string();
+        if let Some(n) = pick_menu(ui, &cur, (0..=8).map(|n: u8| n.to_string())).and_then(|n| n.parse::<u8>().ok()) {
+            *set = Some(dim_override(ids, &[("tolDecimals", json!(n))]));
+        }
+    });
+    prop_row(ui, "Tolerance text height", |ui| {
+        if let Some(f) = number(edit_field(ui, ui.id().with(("tolfac", ids)), real(st.tol_scale)), &mut *bad).filter(|f| *f > 0.0) {
+            *set = Some(dim_override(ids, &[("tolScale", json!(f))]));
+        }
+    });
+    prop_row(ui, "Tolerance pos vert", |ui| {
+        if let Some(i) = choice(ui, usize::from(st.tol_just.min(2)), &["Bottom", "Middle", "Top"]) {
+            *set = Some(dim_override(ids, &[("tolJust", json!(i))]));
+        }
+    });
+}
+
 /// A greyed value computed from the geometry.
 fn read_only(ui: &mut egui::Ui, text: &str) {
     value_box(ui, crate::i18n::t(text), false, false).on_hover_text(crate::tl!("Read-only"));
@@ -1062,8 +1183,9 @@ pub(crate) fn properties_section(app: &mut CadApp, ui: &mut egui::Ui) {
             ui,
             match &e.kind {
                 EntityKind::Text(_) | EntityKind::MText(_) => "Text",
-                EntityKind::Dimension(_) => "Misc",
+                EntityKind::Dimension(_) | EntityKind::MLeader(_) | EntityKind::Leader(_) => "Misc",
                 EntityKind::Hatch(_) => "Hatch pattern",
+                EntityKind::Table(_) => "Table",
                 _ => "Geometry",
             },
         );
@@ -1178,7 +1300,7 @@ pub(crate) fn properties_section(app: &mut CadApp, ui: &mut egui::Ui) {
                 num(ui, "Height", "height", len(tx.height), &mut set, &mut bad, &ids);
                 num(ui, "Rotation", "rotation", real(angles.shown(tx.rotation).to_degrees()), &mut set, &mut bad, &ids);
                 num(ui, "Width factor", "widthFactor", real(tx.width_factor), &mut set, &mut bad, &ids);
-                prop_row(ui, "Oblique angle", |ui| read_only(ui, &real(tx.oblique.to_degrees())));
+                num(ui, "Oblique angle", "obliqueAngle", real(tx.oblique.to_degrees()), &mut set, &mut bad, &ids);
                 prop_group(ui, "Geometry");
                 prop_row(ui, "Position X", |ui| read_only(ui, &len(tx.insert.x)));
                 prop_row(ui, "Position Y", |ui| read_only(ui, &len(tx.insert.y)));
@@ -1225,11 +1347,19 @@ pub(crate) fn properties_section(app: &mut CadApp, ui: &mut egui::Ui) {
                 while sweep <= 0.0 {
                     sweep += std::f64::consts::TAU;
                 }
-                prop_row(ui, "Center X", |ui| read_only(ui, &len(el.center.x)));
-                prop_row(ui, "Center Y", |ui| read_only(ui, &len(el.center.y)));
+                prop_row(ui, "Center X", |ui| {
+                    if let Some(f) = number(edit_field(ui, ui.id().with(("elcx", &ids)), len(el.center.x)), &mut bad) {
+                        set = Some(json!({ "handles": ids, "center": [f, el.center.y] }));
+                    }
+                });
+                prop_row(ui, "Center Y", |ui| {
+                    if let Some(f) = number(edit_field(ui, ui.id().with(("elcy", &ids)), len(el.center.y)), &mut bad) {
+                        set = Some(json!({ "handles": ids, "center": [el.center.x, f] }));
+                    }
+                });
                 prop_row(ui, "Center Z", |ui| read_only(ui, &len(el.center.z)));
-                prop_row(ui, "Major radius", |ui| read_only(ui, &len(major)));
-                prop_row(ui, "Minor radius", |ui| read_only(ui, &len(minor)));
+                num(ui, "Major radius", "majorRadius", len(major), &mut set, &mut bad, &ids);
+                num(ui, "Minor radius", "minorRadius", len(minor), &mut set, &mut bad, &ids);
                 prop_row(ui, "Radius ratio", |ui| read_only(ui, &real(el.ratio)));
                 prop_row(ui, "Start angle", |ui| read_only(ui, &real(el.start.to_degrees())));
                 prop_row(ui, "End angle", |ui| read_only(ui, &real(el.end.to_degrees())));
@@ -1245,7 +1375,7 @@ pub(crate) fn properties_section(app: &mut CadApp, ui: &mut egui::Ui) {
                     prop_row(ui, "End segment width", |ui| read_only(ui, &len(v.end_width)));
                 }
                 num(ui, "Global width", "width", len(pl.const_width), &mut set, &mut bad, &ids);
-                prop_row(ui, "Elevation", |ui| read_only(ui, &len(pl.elevation)));
+                num(ui, "Elevation", "elevation", len(pl.elevation), &mut set, &mut bad, &ids);
                 let g = cadcraft_geom::Polyline { vertices: pl.vertices.clone(), closed: pl.closed };
                 prop_row(ui, "Area", |ui| read_only(ui, &format!("{:.4}", g.area().abs())));
                 prop_row(ui, "Length", |ui| read_only(ui, &len(g.len())));
@@ -1310,6 +1440,7 @@ pub(crate) fn properties_section(app: &mut CadApp, ui: &mut egui::Ui) {
                         set = Some(json!({ "handles": ids, "precision": n }));
                     }
                 });
+                dimension_alt_and_tolerances(ui, &st, &ids, &len, &mut set, &mut bad);
             }
             EntityKind::Insert(i) => {
                 // A dynamic block reference shows its dynamic block's name, not its anonymous
@@ -1350,6 +1481,128 @@ pub(crate) fn properties_section(app: &mut CadApp, ui: &mut egui::Ui) {
                         });
                     }
                 }
+            }
+            EntityKind::Point(pt) => {
+                prop_row(ui, "Position X", |ui| {
+                    if let Some(f) = number(edit_field(ui, ui.id().with(("ptx", &ids)), len(pt.p.x)), &mut bad) {
+                        set = Some(json!({ "handles": ids, "position": [f, pt.p.y] }));
+                    }
+                });
+                prop_row(ui, "Position Y", |ui| {
+                    if let Some(f) = number(edit_field(ui, ui.id().with(("pty", &ids)), len(pt.p.y)), &mut bad) {
+                        set = Some(json!({ "handles": ids, "position": [pt.p.x, f] }));
+                    }
+                });
+                prop_row(ui, "Position Z", |ui| read_only(ui, &len(pt.p.z)));
+            }
+            EntityKind::Ray(r) | EntityKind::XLine(r) => {
+                prop_row(ui, "Basepoint X", |ui| {
+                    if let Some(f) = number(edit_field(ui, ui.id().with(("rbx", &ids)), len(r.base.x)), &mut bad) {
+                        set = Some(json!({ "handles": ids, "basePoint": [f, r.base.y] }));
+                    }
+                });
+                prop_row(ui, "Basepoint Y", |ui| {
+                    if let Some(f) = number(edit_field(ui, ui.id().with(("rby", &ids)), len(r.base.y)), &mut bad) {
+                        set = Some(json!({ "handles": ids, "basePoint": [r.base.x, f] }));
+                    }
+                });
+                prop_row(ui, "Basepoint Z", |ui| read_only(ui, &len(r.base.z)));
+                prop_row(ui, "Second point X", |ui| read_only(ui, &len(r.base.x + r.dir.x)));
+                prop_row(ui, "Second point Y", |ui| read_only(ui, &len(r.base.y + r.dir.y)));
+                prop_row(ui, "Second point Z", |ui| read_only(ui, &len(r.base.z + r.dir.z)));
+                prop_row(ui, "Direction vector X", |ui| read_only(ui, &real(r.dir.x)));
+                prop_row(ui, "Direction vector Y", |ui| read_only(ui, &real(r.dir.y)));
+                prop_row(ui, "Direction vector Z", |ui| read_only(ui, &real(r.dir.z)));
+            }
+            EntityKind::Spline(sp) => {
+                prop_row(ui, "Method", |ui| read_only(ui, if sp.fit.is_empty() { "CV" } else { "Fit" }));
+                prop_row(ui, "Degree", |ui| read_only(ui, &sp.degree.to_string()));
+                prop_row(ui, "Number of control vertices", |ui| read_only(ui, &sp.control.len().to_string()));
+                if !sp.fit.is_empty() {
+                    prop_row(ui, "Number of fit points", |ui| read_only(ui, &sp.fit.len().to_string()));
+                }
+                let b = sp.bounds();
+                let tol = ((b.max - b.min).len() * 1e-4).max(1e-9);
+                let pts = sp.tessellate(if tol.is_finite() { tol } else { 1.0 });
+                let length: f64 = pts.windows(2).filter_map(|w| Some(w.first()?.dist(*w.get(1)?))).sum();
+                prop_row(ui, "Length", |ui| read_only(ui, &len(length)));
+                if sp.closed {
+                    // The area the closed curve encloses (shoelace over its tessellation).
+                    let twice: f64 = pts.iter().zip(pts.iter().cycle().skip(1)).map(|(a, b)| a.x * b.y - b.x * a.y).sum();
+                    prop_row(ui, "Area", |ui| read_only(ui, &real(twice.abs() / 2.0)));
+                }
+                prop_group(ui, "Misc");
+                prop_row(ui, "Closed", |ui| read_only(ui, if sp.closed { "Yes" } else { "No" }));
+                prop_row(ui, "Periodic", |ui| read_only(ui, if sp.is_periodic() { "Yes" } else { "No" }));
+                prop_row(ui, "Planar", |ui| read_only(ui, "Yes"));
+            }
+            EntityKind::Leader(l) => {
+                prop_row(ui, "Dim style", |ui| read_only(ui, &l.style));
+                prop_row(ui, "Leader type", |ui| read_only(ui, if l.spline { "Spline" } else { "Straight" }));
+                prop_row(ui, "Arrowhead", |ui| read_only(ui, if l.arrow { "Yes" } else { "No" }));
+                prop_row(ui, "Vertices", |ui| read_only(ui, &l.vertices.len().to_string()));
+                if let Some(v) = l.vertices.first() {
+                    prop_group(ui, "Geometry");
+                    prop_row(ui, "Vertex X", |ui| read_only(ui, &len(v.x)));
+                    prop_row(ui, "Vertex Y", |ui| read_only(ui, &len(v.y)));
+                }
+            }
+            EntityKind::MLeader(m) => {
+                prop_row(ui, "Multileader style", |ui| read_only(ui, &m.style));
+                prop_row(ui, "Annotative", |ui| read_only(ui, if e.common.anno_scales.is_empty() { "No" } else { "Yes" }));
+                prop_group(ui, "Leaders");
+                let kind = if m.leaders.is_empty() {
+                    "None"
+                } else if m.spline {
+                    "Spline"
+                } else {
+                    "Straight"
+                };
+                prop_row(ui, "Leader type", |ui| read_only(ui, kind));
+                num(ui, "Arrowhead size", "arrowSize", len(m.arrow_size), &mut set, &mut bad, &ids);
+                prop_row(ui, "Landing distance", |ui| read_only(ui, &len(m.dogleg)));
+                if let Some(tx) = &m.text {
+                    prop_group(ui, "Text");
+                    prop_row(ui, "Contents", |ui| read_only(ui, &tx.contents));
+                    prop_row(ui, "Text height", |ui| read_only(ui, &len(tx.height)));
+                }
+            }
+            EntityKind::Table(tb) => {
+                prop_row(ui, "Table style", |ui| read_only(ui, &tb.style));
+                prop_row(ui, "Rows", |ui| read_only(ui, &tb.row_heights.len().to_string()));
+                prop_row(ui, "Columns", |ui| read_only(ui, &tb.col_widths.len().to_string()));
+                prop_row(ui, "Table width", |ui| read_only(ui, &len(tb.col_widths.iter().sum::<f64>())));
+                prop_row(ui, "Table height", |ui| read_only(ui, &len(tb.row_heights.iter().sum::<f64>())));
+                prop_group(ui, "Geometry");
+                prop_row(ui, "Position X", |ui| read_only(ui, &len(tb.insert.x)));
+                prop_row(ui, "Position Y", |ui| read_only(ui, &len(tb.insert.y)));
+                prop_row(ui, "Position Z", |ui| read_only(ui, &len(tb.insert.z)));
+            }
+            EntityKind::Viewport(vp) => {
+                prop_row(ui, "Center X", |ui| read_only(ui, &len(vp.center.x)));
+                prop_row(ui, "Center Y", |ui| read_only(ui, &len(vp.center.y)));
+                prop_row(ui, "Center Z", |ui| read_only(ui, &len(vp.center.z)));
+                prop_row(ui, "Height", |ui| read_only(ui, &len(vp.height)));
+                prop_row(ui, "Width", |ui| read_only(ui, &len(vp.width)));
+                prop_group(ui, "Misc");
+                prop_row(ui, "On", |ui| {
+                    if let Some(on) = yes_no(ui, vp.on) {
+                        set = Some(json!({ "handles": ids, "on": on }));
+                    }
+                });
+                prop_row(ui, "Clipped", |ui| read_only(ui, if vp.clip.is_some() { "Yes" } else { "No" }));
+                prop_row(ui, "Display locked", |ui| {
+                    if let Some(l) = yes_no(ui, vp.locked) {
+                        set = Some(json!({ "handles": ids, "locked": l }));
+                    }
+                });
+                let scale = if vp.view_height > 0.0 { vp.height / vp.view_height } else { 1.0 };
+                num(ui, "Custom scale", "customScale", real(scale), &mut set, &mut bad, &ids);
+                prop_row(ui, "Visual Style", |ui| read_only(ui, "Wireframe 2D"));
+            }
+            EntityKind::Region(rg) => {
+                prop_row(ui, "Area", |ui| read_only(ui, &real(rg.area())));
+                prop_row(ui, "Perimeter", |ui| read_only(ui, &len(rg.perimeter())));
             }
             _ => {}
         }
