@@ -27,3 +27,7 @@ LOFT / SWEEP, sezioni e viste, materiali e render.
   quote (`crates/ui-egui/src/palettes.rs`, `properties.set` in
   `crates/engine/src/cmd/props.rs`), prove `proprieta_*` e schermate
   `autocad-it-proprieta-*.png`. Il PC dell'utente era bloccato: nessun confronto dal vivo.
+  **GitHub Actions è disattivato sul repository** ("Actions has been disabled for this
+  repository"): queste modifiche non sono ancora state compilate né provate. Appena l'utente
+  lo riattiva (Settings → Actions → General → Allow all actions), il primo push o un avvio
+  manuale del workflow le verifica; se il workflow è rosso, correggerle prima di altro.
