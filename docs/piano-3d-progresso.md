@@ -31,3 +31,11 @@ LOFT / SWEEP, sezioni e viste, materiali e render.
   repository"): queste modifiche non sono ancora state compilate né provate. Appena l'utente
   lo riattiva (Settings → Actions → General → Allow all actions), il primo push o un avvio
   manuale del workflow le verifica; se il workflow è rosso, correggerle prima di altro.
+- 17/11/2026: PC dell'utente acceso, ma **GitHub Actions è ancora disattivato** (l'avvio
+  manuale del workflow risponde "Actions has been disabled for this repository"): nessuna
+  compilazione possibile, nemmeno nel cloud (crates.io bloccato). Fatta una revisione a mano
+  delle modifiche del 12 novembre (`props.rs`, `palettes.rs`, `it.tsv`, prove): tipi, campi e
+  firme controllati uno per uno contro `cadcraft-doc`, `cadcraft-geom` ed egui 0.36, catalogo
+  senza righe malformate o doppie; nessun errore trovato. Nessun nuovo codice aggiunto finché
+  il workflow non può verificarlo. Prossimo passo appena Actions è attivo: avviare il workflow
+  su `autocad-it`, correggere se rosso, poi COPYTOLAYER / LAYPREV / LAYWALK (richiesta 5).
