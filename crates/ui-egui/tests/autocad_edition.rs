@@ -109,15 +109,18 @@ fn proprieta_di_tutti_i_tipi() {
         let Ok(r) = h.state_mut().run(cmd, params) else { continue };
         let mut handle = r["handle"].as_str().or_else(|| r["handles"][0].as_str()).map(str::to_string);
         if name == "regione" {
-            if let Some(hd) = &handle {
-                let _ = h.state_mut().run("region", json!({ "handles": [hd] }));
+            if let Some(hd) = handle.clone() {
+                // REGION replaces the rectangle: pick the new region below.
+                if h.state_mut().run("region", json!({ "handles": [hd] })).is_ok() {
+                    handle = None;
+                }
             }
         }
         if handle.is_none() {
             handle = h.state().session.doc().ok().and_then(|d| d.model.last().map(|e| e.handle.hex()));
         }
         let Some(handle) = handle else { continue };
-        h.state_mut().run("select", json!({ "handles": [handle] })).unwrap();
+        h.state_mut().run("select", json!({ "handles": [handle] })).unwrap_or_else(|e| panic!("{name}: {e}"));
         h.run_steps(4);
         if let Ok(dir) = std::env::var("CRAFT_UI_VISUAL_DIR") {
             std::fs::create_dir_all(&dir).unwrap();
